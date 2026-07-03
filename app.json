@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "RESVEPRO",
+    "slug": "resvepro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo-icon.png",
+    "scheme": "resvepro",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0c0f14",
+    "splash": {
+      "image": "./assets/logo-full.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0c0f14"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.resvepro.app",
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "es",
+        "CFBundleLocalizations": ["es", "en"],
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo-icon.png",
+        "backgroundColor": "#0c0f14"
+      },
+      "package": "com.resvepro.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-audio",
+      "expo-video",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "La app necesita acceder a tus fotos para tu imagen de perfil.",
+          "cameraPermission": "La app necesita la cámara para tu foto de perfil."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "La app necesita guardar imágenes en tu galería.",
+          "savePhotosPermission": "La app necesita guardar imágenes en tu galería.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/logo-full.png",
+          "imageWidth": 300,
+          "resizeMode": "contain",
+          "backgroundColor": "#0c0f14"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

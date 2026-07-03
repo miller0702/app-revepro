@@ -1,0 +1,39 @@
+---
+description: Patrones Expo Router, offline y sync
+globs: app/**/*.{tsx,ts},src/**/*.{tsx,ts}
+alwaysApply: false
+---
+
+# Pantallas y lógica móvil
+
+## Estructura
+
+- `app/(auth)/` — login, registro, recuperar contraseña
+- `app/(tabs)/` — library, audio, videos, favorites, profile
+- `app/(system)/` — maintenance, offline, unavailable
+- Detalle: `book/[id]`, `reader/[id]`, `podcast/[id]`, `video/[id]`
+
+## Estado y datos
+
+- Zustand: `authStore`, `playerStore`, `settingsStore`
+- TanStack Query para datos remotos; SQLite (`src/db/`) para offline
+- Sync en `src/offline/syncService.ts`; cambios locales con `synced = 0`
+
+## Nuevas pantallas
+
+1. Archivo de ruta en `app/` siguiendo convención existente
+2. Componentes UI en `src/components/ui/`
+3. Llamadas API en módulos de `src/api/`
+4. Theming con tokens en `src/theme/tokens.ts`
+5. Verificar compatibilidad Expo SDK 54 antes de añadir dependencias nativas
+
+## Estados de carga (skeleton)
+
+**Obligatorio** para cards, listas, contenedores y detalle con datos async.
+
+- Base: `src/components/ui/Skeleton.tsx`
+- Compuestos: `src/components/skeletons/ContentSkeletons.tsx`
+- Patrón: `isLoading ? skeletonKeys() : data` en `FlatList`; `ListEmptyComponent` solo si `!isLoading`
+- **Prohibido:** `"Cargando..."`, `ActivityIndicator` centrado como sustituto de layout
+- Excepciones: `Button` loading, toggles puntuales, splash de sesión, dropdowns auxiliares pequeños
+- Documentación completa: `egw-docs/MOBILE-UI.md`

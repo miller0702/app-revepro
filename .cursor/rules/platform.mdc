@@ -1,0 +1,30 @@
+---
+description: Contexto egw-mobile y reglas multi-repo
+alwaysApply: true
+---
+
+# egw-mobile — app Expo offline-first
+
+App para rol `LECTOR`: biblioteca, audio/podcasts, videos. Consume **egw-api** + SQLite local.
+
+## Comandos
+
+```bash
+pnpm install && pnpm start:dev   # Metro puerto 8003
+```
+
+Expo SDK **54** — Expo Go debe coincidir. En dispositivo físico, usar IP local en `development.ts`.
+
+## Reglas clave
+
+- Rutas en `app/` (Expo Router); lógica en `src/`
+- **Offline-first:** guardar local, sincronizar después; no asumir red permanente
+- Tokens en SecureStore; sync vía `/sync/push` y `/sync/state`
+- Media pesada: URLs de API (`GET /media/:id/url`), no embeber archivos
+- Usar **pnpm** (`node-linker=hoisted` en `.npmrc`)
+- Commits: `feat(mobile):`, `fix(mobile):`, etc.
+- UI en **español**
+
+Seed: `lector@resvepro.local` / `Lector123!`
+
+Ver [AGENTS.md](../AGENTS.md) para pantallas y estado del MVP.
