@@ -1,0 +1,10 @@
+node_modules/
+.git/
+.expo/
+dist/
+web-build/
+*.log
+.env
+.env.*
+!.env.production.example
+.pnpm-store/

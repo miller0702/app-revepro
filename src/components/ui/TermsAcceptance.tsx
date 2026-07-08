@@ -6,10 +6,17 @@ interface TermsAcceptanceProps {
   value: boolean;
   onChange: (next: boolean) => void;
   onPressTerms: () => void;
+  onPressPrivacy: () => void;
   error?: string;
 }
 
-export function TermsAcceptance({ value, onChange, onPressTerms, error }: TermsAcceptanceProps) {
+export function TermsAcceptance({
+  value,
+  onChange,
+  onPressTerms,
+  onPressPrivacy,
+  error,
+}: TermsAcceptanceProps) {
   const { colors } = useTheme();
 
   return (
@@ -20,7 +27,7 @@ export function TermsAcceptance({ value, onChange, onPressTerms, error }: TermsA
           onValueChange={onChange}
           trackColor={{ false: colors.border, true: colors.primary }}
           thumbColor="#fff"
-          accessibilityLabel="Aceptar términos y condiciones"
+          accessibilityLabel="Aceptar términos y política de privacidad"
         />
         <View style={styles.labelRow}>
           <Pressable onPress={() => onChange(!value)}>
@@ -28,6 +35,10 @@ export function TermsAcceptance({ value, onChange, onPressTerms, error }: TermsA
           </Pressable>
           <Pressable onPress={onPressTerms} hitSlop={8}>
             <Text style={[styles.link, { color: colors.primary }]}>términos y condiciones</Text>
+          </Pressable>
+          <Text style={[styles.text, { color: colors.textSecondary }]}> y la </Text>
+          <Pressable onPress={onPressPrivacy} hitSlop={8}>
+            <Text style={[styles.link, { color: colors.primary }]}>política de privacidad</Text>
           </Pressable>
         </View>
       </View>

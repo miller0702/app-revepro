@@ -18,7 +18,10 @@
       "bundleIdentifier": "com.resvepro.app",
       "infoPlist": {
         "CFBundleDevelopmentRegion": "es",
-        "CFBundleLocalizations": ["es", "en"],
+        "CFBundleLocalizations": [
+          "es",
+          "en"
+        ],
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
@@ -29,7 +32,8 @@
         "foregroundImage": "./assets/logo-icon.png",
         "backgroundColor": "#0c0f14"
       },
-      "package": "com.resvepro.app"
+      "package": "com.resvepro.app",
+      "versionCode": 2
     },
     "plugins": [
       "expo-router",
@@ -64,6 +68,13 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "egwEnv": "development",
+      "router": {},
+      "eas": {
+        "projectId": "44e09983-b9ac-42e6-bd2a-1e4874c59822"
+      }
     }
   }
 }

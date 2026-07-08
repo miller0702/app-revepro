@@ -50,6 +50,9 @@ export interface PublicAppSettings {
   logoUrl?: string;
   logoUrlDark?: string;
   logoMarkUrl?: string;
+  privacyPolicyUrl?: string;
+  termsUrl?: string;
+  accountDeletionUrl?: string;
 }
 
 export interface AppManualSection {

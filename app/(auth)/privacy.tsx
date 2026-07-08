@@ -1,14 +1,14 @@
 import { useRouter } from 'expo-router';
 import { LegalDocumentScreen } from '../../src/components/legal/LegalDocumentScreen';
 
-export default function TermsScreen() {
+export default function PrivacyScreen() {
   const router = useRouter();
 
   return (
     <LegalDocumentScreen
-      type="TERMS"
-      title="Términos y condiciones"
-      subtitle="Lee el documento antes de aceptar el registro"
+      type="PRIVACY"
+      title="Política de privacidad"
+      subtitle="Cómo tratamos tus datos en RESVEPRO"
       onBack={() => router.back()}
     />
   );

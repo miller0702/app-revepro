@@ -22,7 +22,29 @@
     "legalSection": "Legal y ayuda",
     "manual": "Manual de usuario",
     "terms": "Términos y condiciones",
-    "requirements": "Enviar requerimiento"
+    "privacy": "Política de privacidad",
+    "requirements": "Enviar requerimiento",
+    "deleteAccount": "Eliminar cuenta"
+  },
+  "deleteAccount": {
+    "title": "Eliminar cuenta",
+    "subtitle": "Borra tu cuenta y los datos personales asociados",
+    "warning": "Esta acción es permanente. Se eliminarán marcadores, progreso, publicaciones y tu perfil.",
+    "hint": "Escribe tu contraseña y la palabra ELIMINAR para confirmar.",
+    "passwordLabel": "Contraseña actual",
+    "confirmLabel": "Escribe ELIMINAR para confirmar",
+    "submit": "Eliminar mi cuenta",
+    "deleting": "Eliminando...",
+    "confirmTitle": "¿Eliminar cuenta?",
+    "confirmMessage": "No podrás recuperar tu cuenta ni tus datos personales.",
+    "cancel": "Cancelar",
+    "errorTitle": "No se pudo eliminar",
+    "passwordRequired": "Indica tu contraseña actual.",
+    "confirmRequired": "Escribe ELIMINAR en mayúsculas para confirmar.",
+    "errorGeneric": "Ocurrió un error al eliminar la cuenta.",
+    "publicHint": "Si no tienes sesión iniciada, puedes solicitar la eliminación desde el formulario web.",
+    "publicLink": "Solicitar eliminación en la web",
+    "publicUrlUnavailable": "El enlace público no está disponible en este momento."
   },
   "goals": {
     "title": "Mis metas",

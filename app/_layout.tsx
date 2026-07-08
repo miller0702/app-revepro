@@ -39,10 +39,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (root === '(system)') return;
 
     const inAuth = root === '(auth)';
-    const inTerms = inAuth && segments[1] === 'terms';
+    const inLegal =
+      inAuth && (segments[1] === 'terms' || segments[1] === 'privacy');
     if (!isAuthenticated && !isPublicRoute(segments as string[])) {
       router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuth && !inTerms) {
+    } else if (isAuthenticated && inAuth && !inLegal) {
       router.replace('/feed');
     }
   }, [navigationState?.key, isAuthenticated, isLoading, segments]);

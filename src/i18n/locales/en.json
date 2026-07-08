@@ -22,7 +22,29 @@
     "legalSection": "Legal & help",
     "manual": "User manual",
     "terms": "Terms & conditions",
-    "requirements": "Send request"
+    "privacy": "Privacy policy",
+    "requirements": "Send request",
+    "deleteAccount": "Delete account"
+  },
+  "deleteAccount": {
+    "title": "Delete account",
+    "subtitle": "Remove your account and associated personal data",
+    "warning": "This action is permanent. Bookmarks, progress, posts and your profile will be deleted.",
+    "hint": "Enter your password and type ELIMINAR to confirm.",
+    "passwordLabel": "Current password",
+    "confirmLabel": "Type ELIMINAR to confirm",
+    "submit": "Delete my account",
+    "deleting": "Deleting...",
+    "confirmTitle": "Delete account?",
+    "confirmMessage": "You will not be able to recover your account or personal data.",
+    "cancel": "Cancel",
+    "errorTitle": "Could not delete",
+    "passwordRequired": "Enter your current password.",
+    "confirmRequired": "Type ELIMINAR in uppercase to confirm.",
+    "errorGeneric": "An error occurred while deleting the account.",
+    "publicHint": "If you are not signed in, you can request deletion from the web form.",
+    "publicLink": "Request deletion on the web",
+    "publicUrlUnavailable": "The public link is not available right now."
   },
   "goals": {
     "title": "My goals",

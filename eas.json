@@ -1,0 +1,38 @@
+{
+  "cli": {
+    "version": ">= 16.6.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EGW_ENV": "development"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EGW_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api-resvepro-app-1046799880752.us-west1.run.app/api/v1"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EGW_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api-resvepro-app-1046799880752.us-west1.run.app/api/v1"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

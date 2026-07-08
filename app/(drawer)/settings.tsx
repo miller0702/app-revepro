@@ -189,9 +189,19 @@ export default function SettingsScreen() {
               {t('settings.terms')}
             </Text>
           </Pressable>
+          <Pressable onPress={() => router.push('/privacy')} style={styles.linkRow}>
+            <Text style={[styles.actionLabel, { color: colors.text, fontSize: scaleFont(15) }]}>
+              {t('settings.privacy')}
+            </Text>
+          </Pressable>
           <Pressable onPress={() => router.push('/requirements')} style={styles.linkRow}>
             <Text style={[styles.actionLabel, { color: colors.text, fontSize: scaleFont(15) }]}>
               {t('settings.requirements')}
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => router.push('/delete-account')} style={styles.linkRow}>
+            <Text style={[styles.actionLabel, { color: colors.error, fontSize: scaleFont(15) }]}>
+              {t('settings.deleteAccount')}
             </Text>
           </Pressable>
         </View>

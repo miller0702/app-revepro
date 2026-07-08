@@ -31,4 +31,7 @@ export const usersApi = {
     }>('/users/me/cover'),
 
   getMe: () => apiClient.get('/users/me'),
+
+  deleteAccount: (payload: { password: string; confirm: string }) =>
+    apiClient.delete('/users/me', { data: payload }),
 };

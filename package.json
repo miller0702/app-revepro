@@ -10,7 +10,11 @@
     "android:prod": "cross-env EGW_ENV=production expo start --android --port 8003",
     "ios": "cross-env EGW_ENV=development expo start --ios --port 8003",
     "ios:prod": "cross-env EGW_ENV=production expo start --ios --port 8003",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:preview:android": "eas build --profile preview --platform android",
+    "build:preview:ios": "eas build --profile preview --platform ios",
+    "build:prod:android": "eas build --profile production --platform android",
+    "build:prod:ios": "eas build --profile production --platform ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -53,6 +57,7 @@
   "devDependencies": {
     "@types/react": "~19.1.10",
     "cross-env": "^7.0.3",
+    "eas-cli": "^16.6.0",
     "typescript": "~5.9.2"
   },
   "private": true,

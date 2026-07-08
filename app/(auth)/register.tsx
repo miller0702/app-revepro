@@ -193,6 +193,7 @@ export default function RegisterScreen() {
                 clearError('acceptTerms');
               }}
               onPressTerms={() => router.push('/(auth)/terms')}
+              onPressPrivacy={() => router.push('/(auth)/privacy')}
               error={errors.acceptTerms}
             />
 
