@@ -14,6 +14,14 @@ import {
   markChapterCompleted,
   syncBookProgressFromChapters,
 } from '../../src/db/chapterCompletion';
+import { getLocalBookDetail } from '../../src/db/localBooks';
+import {
+  cacheRemoteHighlights,
+  getLocalHighlights,
+  saveLocalHighlight,
+  markHighlightSynced,
+} from '../../src/db/highlights';
+import { useSystemStore } from '../../src/stores/systemStore';
 import { useReadingSessionTracker } from '../../src/hooks/useDailyReadingTime';
 import { ReaderScreenSkeleton } from '../../src/components/skeletons/ContentSkeletons';
 import { palette } from '../../src/theme/colors';
@@ -25,6 +33,7 @@ export default function ReaderScreen() {
   const queryClient = useQueryClient();
   const webViewRef = useRef<ReaderWebViewHandle>(null);
   const readerBackground = isDark ? palette.reader.dark : palette.reader.light;
+  const isOffline = useSystemStore((s) => s.isOffline);
   const [highlightMode, setHighlightMode] = useState(false);
   const [selectionText, setSelectionText] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -37,10 +46,20 @@ export default function ReaderScreen() {
   const { data, isLoading } = useQuery({
     queryKey: ['book', id],
     queryFn: async () => {
-      const res = await libraryApi.getBook(id!);
-      return res.data.data;
+      try {
+        if (!isOffline) {
+          const res = await libraryApi.getBook(id!);
+          return res.data.data;
+        }
+      } catch {
+        /* fallback local */
+      }
+      const local = await getLocalBookDetail(id!);
+      if (!local) throw new Error('Capítulos no disponibles offline');
+      return local;
     },
     enabled: !!id,
+    retry: isOffline ? false : 1,
   });
 
   const chapters = data?.chapters ?? [];
@@ -72,8 +91,20 @@ export default function ReaderScreen() {
 
   const { data: savedHighlights = [] } = useQuery({
     queryKey: ['highlights', id],
-    queryFn: async () => (await studyApi.getHighlights(id!)).data.data,
+    queryFn: async () => {
+      try {
+        if (!isOffline) {
+          const remote = (await studyApi.getHighlights(id!)).data.data;
+          await cacheRemoteHighlights(remote);
+          return remote;
+        }
+      } catch {
+        /* fallback local */
+      }
+      return getLocalHighlights(id!);
+    },
     enabled: !!id,
+    retry: false,
   });
 
   const chapterHighlights = useMemo(() => {
@@ -84,13 +115,31 @@ export default function ReaderScreen() {
   }, [savedHighlights, chapter?.id, localHighlights]);
 
   const highlightMutation = useMutation({
-    mutationFn: (excerpt: string) =>
-      studyApi.createHighlight({
+    mutationFn: async (excerpt: string) => {
+      const { localId } = await saveLocalHighlight({
         bookId: id!,
         chapterId: chapter?.id,
         excerpt,
-      }),
-    onSuccess: (_data, excerpt) => {
+        bookTitle: data?.title,
+        authorName: data?.author?.name,
+        chapterTitle: chapter?.title,
+      });
+
+      if (!isOffline) {
+        try {
+          const res = await studyApi.createHighlight({
+            bookId: id!,
+            chapterId: chapter?.id,
+            excerpt,
+          });
+          await markHighlightSynced(localId, res.data.data.id);
+        } catch {
+          // Queda en cola local (synced=0) hasta reconectar.
+        }
+      }
+      return excerpt;
+    },
+    onSuccess: (excerpt) => {
       webViewRef.current?.applyHighlightToSelection();
       setLocalHighlights((prev) => (prev.includes(excerpt) ? prev : [...prev, excerpt]));
       queryClient.invalidateQueries({ queryKey: ['highlights'] });
@@ -98,7 +147,12 @@ export default function ReaderScreen() {
       queryClient.invalidateQueries({ queryKey: ['reading-activity'] });
       queryClient.invalidateQueries({ queryKey: ['reading-statuses'] });
       setSelectionText(null);
-      Alert.alert('Guardado', 'Cita subrayada en tu centro de estudios.');
+      Alert.alert(
+        'Guardado',
+        isOffline
+          ? 'Subrayado guardado en el dispositivo. Se sincronizará al recuperar conexión.'
+          : 'Cita subrayada en tu centro de estudios.',
+      );
     },
     onError: () => Alert.alert('Error', 'No se pudo guardar el subrayado.'),
   });
@@ -174,7 +228,7 @@ export default function ReaderScreen() {
         }}
         selectionText={selectionText}
         onSaveHighlight={() => selectionText && highlightMutation.mutate(selectionText)}
-        onPublishQuote={openPublish}
+        onPublishQuote={isOffline ? undefined : openPublish}
         onClearSelection={() => setSelectionText(null)}
       />
 

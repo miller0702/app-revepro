@@ -11,6 +11,7 @@ import { ShareToFeedButton } from '../../src/components/community/ShareToFeedBut
 import { DirectVideoPlayer, YouTubePlayer } from '../../src/components/VideoPlayer';
 import { DrawerBackButton } from '../../src/components/navigation/DrawerBackButton';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useResolvedTopInset } from '../../src/hooks/useSafeAreaLayout';
 import { typography, spacing } from '../../src/theme/tokens';
 import { SCREEN_PADDING_X } from '../../src/theme/layout';
 import { ScreenDetailLoading } from '../../src/components/ui/ScreenDetailLoading';
@@ -21,6 +22,7 @@ export default function VideoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const topInset = useResolvedTopInset();
 
   const { data, isLoading } = useQuery({
     queryKey: ['video', id],
@@ -51,6 +53,8 @@ export default function VideoDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Espacio bajo status bar para que el video no invada la hora del teléfono */}
+      <View style={[styles.statusSpacer, { height: topInset }]} />
       <View style={styles.playerSection}>
         <View style={styles.playerFrame}>
           {isYouTube && video.youtubeVideoId ? (
@@ -67,7 +71,7 @@ export default function VideoDetailScreen() {
 
         <LinearGradient
           colors={['rgba(0,0,0,0.55)', 'transparent']}
-          style={[styles.playerTopGradient, { paddingTop: insets.top }]}
+          style={styles.playerTopGradient}
         >
           <DrawerBackButton color="#fff" />
         </LinearGradient>
@@ -114,6 +118,10 @@ export default function VideoDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  statusSpacer: {
+    width: '100%',
+    backgroundColor: '#000',
+  },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loading: { fontSize: 15 },
   playerSection: {
@@ -129,6 +137,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    paddingTop: spacing.sm,
     paddingHorizontal: spacing.xs,
     paddingBottom: spacing.md,
     zIndex: 2,

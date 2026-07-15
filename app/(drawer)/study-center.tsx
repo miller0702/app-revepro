@@ -79,7 +79,18 @@ export default function StudyCenterScreen() {
 
   const highlightsQuery = useQuery({
     queryKey: ['highlights'],
-    queryFn: async () => (await studyApi.getHighlights()).data.data,
+    queryFn: async () => {
+      try {
+        const remote = (await studyApi.getHighlights()).data.data;
+        const { cacheRemoteHighlights } = await import('../../src/db/highlights');
+        await cacheRemoteHighlights(remote);
+        return remote;
+      } catch {
+        const { getLocalHighlights } = await import('../../src/db/highlights');
+        return getLocalHighlights();
+      }
+    },
+    retry: false,
   });
 
   const folderCount = foldersQuery.data?.length ?? 0;

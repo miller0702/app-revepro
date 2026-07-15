@@ -4,6 +4,8 @@ import { useGoalsStore } from '../stores/goalsStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { warmAccessTokenCache } from '../lib/accessTokenCache';
 import { loadPublicSettings } from '../offline/publicSettings';
+import { processDownloadQueue } from '../offline/downloadWorker';
+import { syncWithServer } from '../offline/syncService';
 import { AppLoadingScreen } from './ui/AppLoadingScreen';
 import { hideNativeSplash } from '../utils/splash';
 import { SPLASH_BACKGROUND } from '../theme/splash';
@@ -29,6 +31,9 @@ export function BootstrapGate({ children }: { children: React.ReactNode }) {
       ]);
       await warmAccessTokenCache();
       if (mounted) setAuthReady(true);
+      // En segundo plano: completar descargas y sync de subrayados/progreso.
+      void processDownloadQueue().catch(() => undefined);
+      void syncWithServer().catch(() => undefined);
     })();
 
     return () => {

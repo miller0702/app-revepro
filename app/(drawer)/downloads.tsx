@@ -10,12 +10,15 @@ import {
   removeOfflineBook,
   type OfflineBookRow,
 } from '../../src/db/offlineBooks';
+import { processDownloadQueue } from '../../src/offline/downloadWorker';
+import { useSystemStore } from '../../src/stores/systemStore';
 import { AppIcon } from '../../src/components/ui/AppIcon';
 import { spacing, radius } from '../../src/theme/tokens';
 
 export default function DownloadsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const isOffline = useSystemStore((s) => s.isOffline);
   const [books, setBooks] = useState<OfflineBookRow[]>([]);
 
   const reload = useCallback(async () => {
@@ -28,8 +31,13 @@ export default function DownloadsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      reload();
-    }, [reload]),
+      void (async () => {
+        if (!isOffline) {
+          await processDownloadQueue().catch(() => undefined);
+        }
+        await reload();
+      })();
+    }, [isOffline, reload]),
   );
 
   const handleRemove = (book: OfflineBookRow) => {
@@ -59,9 +67,11 @@ export default function DownloadsScreen() {
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
               Desde el detalle de un libro, pulsa «Descargar offline» para guardarlo aquí.
             </Text>
-            <Pressable onPress={() => router.push('/library')}>
-              <Text style={[styles.link, { color: colors.primary }]}>Ir a la biblioteca</Text>
-            </Pressable>
+            {!isOffline ? (
+              <Pressable onPress={() => router.push('/library')}>
+                <Text style={[styles.link, { color: colors.primary }]}>Ir a la biblioteca</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           books.map((book) => (
@@ -69,7 +79,16 @@ export default function DownloadsScreen() {
               key={book.id}
               style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
             >
-              <Pressable style={styles.cardMain} onPress={() => router.push(`/book/${book.id}`)}>
+              <Pressable
+                style={styles.cardMain}
+                onPress={() => {
+                  if (book.download_status === 'done') {
+                    router.push(`/reader/${book.id}`);
+                  } else {
+                    router.push(`/book/${book.id}`);
+                  }
+                }}
+              >
                 <View style={[styles.cover, { backgroundColor: colors.accentSoft }]}>
                   <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 18 }}>
                     {book.title.charAt(0)}

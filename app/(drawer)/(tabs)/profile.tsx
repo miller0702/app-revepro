@@ -339,14 +339,6 @@ export default function ProfileScreen() {
             </Text>
           ) : null}
 
-          <Button
-            title="Editar foto de perfil"
-            variant="outline"
-            onPress={() => setAvatarSheetOpen(true)}
-            disabled={uploading}
-            style={styles.editButton}
-          />
-
           <View style={[styles.statsRow, { borderColor: colors.border }]}>
             <Pressable style={styles.statItem} onPress={() => router.push('/feed')}>
               <Text style={[styles.statValue, { color: colors.text }]}>{postsCount}</Text>
@@ -635,7 +627,6 @@ const styles = StyleSheet.create({
   },
   name: { ...typography.title, fontSize: 22, textAlign: 'center' },
   username: { fontSize: 15, marginTop: 4, textAlign: 'center' },
-  editButton: { marginTop: spacing.md, alignSelf: 'stretch' },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',

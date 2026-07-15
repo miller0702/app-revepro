@@ -15,7 +15,7 @@ export default function OfflineScreen() {
       const reachable = await probeApiReachable();
       setOffline(!reachable);
       if (reachable) {
-        router.replace('/feed');
+        router.replace('/downloads');
       }
     } finally {
       setRetrying(false);
@@ -27,15 +27,22 @@ export default function OfflineScreen() {
       icon="offline"
       code="SIN CONEXIÓN"
       title="No hay internet"
-      message="Comprueba tu conexión Wi‑Fi o datos móviles. Puedes seguir leyendo contenido que ya descargaste cuando vuelvas a estar en línea."
+      message="Puedes seguir con tus libros descargados y el centro de estudios (progreso y subrayados guardados en el dispositivo). El resto de la app requiere conexión."
       primaryAction={{
-        label: retrying ? 'Comprobando…' : 'Reintentar',
-        onPress: () => void retry(),
+        label: 'Mis descargas',
+        onPress: () => router.replace('/downloads'),
       }}
       secondaryAction={{
-        label: 'Ir al inicio',
-        onPress: () => router.replace('/feed'),
+        label: 'Centro de estudios',
+        onPress: () => router.replace('/study-center'),
       }}
+      extraActions={[
+        {
+          label: retrying ? 'Comprobando…' : 'Reintentar conexión',
+          onPress: () => void retry(),
+          variant: 'ghost',
+        },
+      ]}
     />
   );
 }

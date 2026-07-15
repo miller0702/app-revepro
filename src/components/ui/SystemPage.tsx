@@ -5,13 +5,21 @@ import { Button } from './Button';
 import { Screen } from './Screen';
 import { typography, spacing, radius } from '../../theme/tokens';
 
+type SystemAction = {
+  label: string;
+  onPress: () => void;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+};
+
 export interface SystemPageProps {
   icon: AppIconName;
   code?: string;
   title: string;
   message: string;
-  primaryAction?: { label: string; onPress: () => void };
-  secondaryAction?: { label: string; onPress: () => void };
+  primaryAction?: SystemAction;
+  secondaryAction?: SystemAction;
+  /** Acciones adicionales (p. ej. Reintentar debajo de descargas / estudio). */
+  extraActions?: SystemAction[];
   style?: ViewStyle;
 }
 
@@ -22,6 +30,7 @@ export function SystemPage({
   message,
   primaryAction,
   secondaryAction,
+  extraActions,
   style,
 }: SystemPageProps) {
   const { colors } = useTheme();
@@ -39,16 +48,30 @@ export function SystemPage({
         <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
         <View style={styles.actions}>
           {primaryAction && (
-            <Button title={primaryAction.label} onPress={primaryAction.onPress} style={styles.btn} />
+            <Button
+              title={primaryAction.label}
+              onPress={primaryAction.onPress}
+              variant={primaryAction.variant}
+              style={styles.btn}
+            />
           )}
           {secondaryAction && (
             <Button
               title={secondaryAction.label}
               onPress={secondaryAction.onPress}
-              variant="outline"
+              variant={secondaryAction.variant ?? 'outline'}
               style={styles.btn}
             />
           )}
+          {extraActions?.map((action) => (
+            <Button
+              key={action.label}
+              title={action.label}
+              onPress={action.onPress}
+              variant={action.variant ?? 'ghost'}
+              style={styles.btn}
+            />
+          ))}
         </View>
       </View>
     </Screen>

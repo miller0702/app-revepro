@@ -148,8 +148,12 @@ export function PostCommentsSheet({ post, onClose, embedded = false, visible }: 
   };
 
   const keyboardOpen = keyboardHeight > 0;
-  /** En Modal de Android adjustResize no aplica: levantamos el compositor con la altura del teclado. */
-  const composerLift = keyboardOpen ? keyboardHeight : 0;
+  /**
+   * iOS necesita levantar el compositor con la altura del teclado.
+   * En Android `softwareKeyboardLayoutMode=resize` ya reduce la ventana:
+   * sumar keyboardHeight aquí sube la caja de más (peor en tablets).
+   */
+  const composerLift = Platform.OS === 'ios' && keyboardOpen ? keyboardHeight : 0;
   const composerBottomPad = keyboardOpen
     ? spacing.sm
     : Math.max(insets.bottom, embedded ? spacing.sm : spacing.lg);

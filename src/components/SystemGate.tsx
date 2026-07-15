@@ -9,7 +9,10 @@ import {
 import { useSystemStore } from '../stores/systemStore';
 import { loadPublicSettings } from '../offline/publicSettings';
 import { systemRoutes } from '../navigation/systemRoutes';
+import { isOfflineAllowedSegments } from '../navigation/offlineRoutes';
 import { probeApiReachable } from '../utils/connectivity';
+import { processDownloadQueue } from '../offline/downloadWorker';
+import { syncWithServer } from '../offline/syncService';
 
 function isSystemSegment(segments: string[], page: 'offline' | 'unavailable' | 'maintenance') {
   return segments[0] === '(system)' && segments[1] === page;
@@ -30,7 +33,13 @@ export function SystemGate() {
 
     const syncConnectivity = async () => {
       const reachable = await probeApiReachable();
-      if (mounted) setOffline(!reachable);
+      if (!mounted) return;
+      const wasOffline = useSystemStore.getState().isOffline;
+      setOffline(!reachable);
+      if (reachable && wasOffline) {
+        void processDownloadQueue().catch(() => undefined);
+        void syncWithServer().catch(() => undefined);
+      }
     };
 
     void syncConnectivity();
@@ -56,6 +65,7 @@ export function SystemGate() {
     const onOffline = isSystemSegment(segs, 'offline');
     const onUnavailable = isSystemSegment(segs, 'unavailable');
     const onSystem = segs[0] === '(system)' || segs[0] === '+not-found';
+    const offlineAllowed = isOfflineAllowedSegments(segs);
 
     if (maintenanceMode && !onMaintenance) {
       router.replace(systemRoutes.maintenance);
@@ -71,13 +81,14 @@ export function SystemGate() {
 
     if (serviceUnavailable) return;
 
-    if (isOffline && !onOffline && !onSystem) {
+    // Sin red: permite descargas, estudio y lectura local; el resto va a offline.
+    if (isOffline && !onOffline && !onSystem && !offlineAllowed) {
       router.replace(systemRoutes.offline);
       return;
     }
 
     if (!isOffline && onOffline) {
-      router.replace('/feed');
+      router.replace('/downloads');
     }
   }, [isOffline, maintenanceMode, serviceUnavailable, segments, router]);
 

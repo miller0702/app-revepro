@@ -12,11 +12,29 @@ CREATE TABLE IF NOT EXISTS chapter_completion (
 );
 `;
 
+const HIGHLIGHTS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS highlights (
+  id TEXT PRIMARY KEY NOT NULL,
+  server_id TEXT,
+  book_id TEXT NOT NULL,
+  chapter_id TEXT,
+  excerpt TEXT NOT NULL,
+  note TEXT,
+  color TEXT DEFAULT 'yellow',
+  book_title TEXT,
+  author_name TEXT,
+  chapter_title TEXT,
+  synced INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+`;
+
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (!db) {
     db = await SQLite.openDatabaseAsync(DB_NAME);
     await db.execAsync(CREATE_TABLES_SQL);
     await db.execAsync(CHAPTER_COMPLETION_TABLE_SQL);
+    await db.execAsync(HIGHLIGHTS_TABLE_SQL);
   }
   return db;
 }

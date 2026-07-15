@@ -5,6 +5,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { libraryApi } from '../../src/api/library';
 import { useTheme } from '../../src/hooks/useTheme';
 import { saveBookOffline, queueDownload } from '../../src/db/database';
+import { getLocalBookDetail, hasLocalBookChapters } from '../../src/db/localBooks';
+import { downloadBookForOffline } from '../../src/offline/downloadWorker';
+import { useSystemStore } from '../../src/stores/systemStore';
 import { Button } from '../../src/components/ui/Button';
 import { FavoriteToggle } from '../../src/components/ui/FavoriteToggle';
 import { ShareToFeedButton } from '../../src/components/community/ShareToFeedButton';
@@ -33,17 +36,36 @@ export default function BookDetailScreen() {
   const queryClient = useQueryClient();
   const { play, track, isPlaying, toggle } = usePlayerStore();
 
+  const isOffline = useSystemStore((s) => s.isOffline);
+
   const { data, isLoading } = useQuery({
     queryKey: ['book', id],
     queryFn: async () => {
-      const res = await libraryApi.getBook(id!);
-      return res.data.data;
+      try {
+        if (!isOffline) {
+          const res = await libraryApi.getBook(id!);
+          return res.data.data;
+        }
+      } catch {
+        /* fallback local */
+      }
+      const local = await getLocalBookDetail(id!);
+      if (!local) throw new Error('Libro no disponible offline');
+      return local;
     },
     enabled: !!id,
+    retry: isOffline ? false : 1,
   });
 
   const { statuses } = useReadingStatuses(id ? [id] : []);
   const readingStatus = id ? statuses[id] : undefined;
+
+  const offlineReadyQuery = useQuery({
+    queryKey: ['book-offline-ready', id],
+    queryFn: () => hasLocalBookChapters(id!),
+    enabled: !!id,
+  });
+  const isDownloadedOffline = offlineReadyQuery.data === true;
 
   useEffect(() => {
     if (!data?.isAudiobook) return;
@@ -85,14 +107,19 @@ export default function BookDetailScreen() {
         id: data.id,
         title: data.title,
         slug: data.slug,
-        summary: data.summary,
+        summary: data.summary ?? undefined,
         authorName: data.author?.name,
-        coverUrl: data.coverUrl,
+        coverUrl: data.coverUrl ?? undefined,
       });
       await queueDownload(data.id);
-      Alert.alert('Listo', 'Libro guardado para lectura offline.');
+      await downloadBookForOffline(data.id);
+      await queryClient.invalidateQueries({ queryKey: ['book-offline-ready', data.id] });
+      Alert.alert('Listo', 'Libro descargado. Ya puedes leerlo sin conexión.');
     } catch {
-      Alert.alert('Error', 'No se pudo guardar offline');
+      Alert.alert(
+        'Error',
+        'No se pudieron descargar todos los capítulos. Se reintentará automáticamente cuando haya conexión.',
+      );
     }
   };
 
@@ -183,21 +210,30 @@ export default function BookDetailScreen() {
                 variant="secondary"
               />
             ) : null}
-            <Button title="Descargar offline" onPress={handleDownload} variant="outline" />
-            <ShareToFeedButton
-              draft={{
-                kind: 'RECOMMENDATION',
-                body: `Recomiendo «${data.title}»`,
-                bookId: data.id,
-                attachmentPreview: {
-                  type: 'BOOK',
-                  id: data.id,
-                  title: data.title,
-                  subtitle: data.author?.name,
-                  imageUrl: data.coverUrl,
-                },
-              }}
-            />
+            {!isOffline && !isDownloadedOffline ? (
+              <Button title="Descargar offline" onPress={handleDownload} variant="outline" />
+            ) : null}
+            {isDownloadedOffline ? (
+              <Text style={[styles.offlineReady, { color: colors.accent }]}>
+                Disponible sin conexión
+              </Text>
+            ) : null}
+            {!isOffline ? (
+              <ShareToFeedButton
+                draft={{
+                  kind: 'RECOMMENDATION',
+                  body: `Recomiendo «${data.title}»`,
+                  bookId: data.id,
+                  attachmentPreview: {
+                    type: 'BOOK',
+                    id: data.id,
+                    title: data.title,
+                    subtitle: data.author?.name,
+                    imageUrl: data.coverUrl,
+                  },
+                }}
+              />
+            ) : null}
           </View>
 
           <Text style={[styles.section, { color: colors.text }]}>Capítulos</Text>
@@ -232,6 +268,7 @@ const styles = StyleSheet.create({
   favRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   favLabel: { fontSize: 14, fontWeight: '600' },
   actions: { gap: 10, marginBottom: spacing.xl },
+  offlineReady: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
   section: { ...typography.title, marginBottom: spacing.md },
   chapter: {
     flexDirection: 'row',

@@ -2,6 +2,7 @@ import { apiClient } from './client';
 import type { CommunityReactionType, ReactionCounts } from '../constants/communityReactions';
 
 export type CommunityPostKind = 'GENERAL' | 'RECOMMENDATION' | 'QUOTE' | 'ANNOUNCEMENT';
+export type CommunityPostVisibility = 'PUBLIC' | 'CONNECTIONS';
 
 export interface CommunityAuthor {
   id: string;
@@ -62,6 +63,7 @@ export interface CommunityPostRepostPreview {
 export interface CommunityPost {
   id: string;
   kind?: CommunityPostKind;
+  visibility?: CommunityPostVisibility;
   isPinned?: boolean;
   body: string;
   chapterId: string | null;
@@ -141,6 +143,7 @@ export const communityApi = {
   createPost: (body: {
     body: string;
     kind?: CommunityPostKind;
+    visibility?: CommunityPostVisibility;
     bookId?: string;
     videoId?: string;
     podcastSeriesId?: string;

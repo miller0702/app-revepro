@@ -58,6 +58,7 @@ export interface PublicAppSettings {
 export interface AppManualSection {
   id: string;
   code: string;
+  audience?: 'APP' | 'PANEL';
   title: string;
   body: string;
   sortOrder: number;

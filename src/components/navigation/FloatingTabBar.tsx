@@ -159,7 +159,7 @@ export function getFloatingTabBarReserve(bottomInset: number, collapsed = false)
  * píldora translúcida centrada; se compacta al scrollear hacia abajo.
  */
 export function AppTabBar({ state, navigation, getSection }: AppTabBarProps) {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const collapseTarget = useTabBarScrollStore((s) => s.collapse);
@@ -190,11 +190,12 @@ export function AppTabBar({ state, navigation, getSection }: AppTabBarProps) {
       return compareAppTabOrder(a.name, b.name);
     });
 
-  const pillBg = isDark ? 'rgba(22, 26, 34, 0.82)' : 'rgba(18, 20, 26, 0.78)';
-  const pillBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.18)';
-  const activePill = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.22)';
-  const iconIdle = 'rgba(255,255,255,0.78)';
-  const iconActive = '#FFFFFF';
+  const pillBg = isDark ? 'rgba(22, 26, 34, 0.88)' : 'rgba(255, 253, 249, 0.94)';
+  const pillBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(26, 32, 48, 0.10)';
+  const activePill = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(201, 162, 39, 0.18)';
+  const iconIdle = isDark ? 'rgba(255,255,255,0.72)' : 'rgba(26, 32, 48, 0.55)';
+  const iconActive = isDark ? '#FFFFFF' : colors.primaryDark;
+  const androidRipple = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(26, 32, 48, 0.10)';
 
   const dockStyle = useAnimatedStyle(() => ({
     paddingHorizontal: interpolate(
@@ -236,11 +237,11 @@ export function AppTabBar({ state, navigation, getSection }: AppTabBarProps) {
             Platform.select({
               ios: {
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.35,
-                shadowRadius: 18,
+                shadowOffset: { width: 0, height: isDark ? 10 : 6 },
+                shadowOpacity: isDark ? 0.35 : 0.12,
+                shadowRadius: isDark ? 18 : 14,
               },
-              android: { elevation: 18 },
+              android: { elevation: isDark ? 18 : 10 },
             }),
           ]}
         >
@@ -278,6 +279,7 @@ export function AppTabBar({ state, navigation, getSection }: AppTabBarProps) {
                   key={route.key}
                   accessibilityRole="button"
                   accessibilityState={focused ? { selected: true } : {}}
+                  android_ripple={{ color: androidRipple, borderless: true, radius: 22 }}
                   onPress={() => {
                     expand();
                     const event = navigation.emit({
@@ -352,7 +354,8 @@ const tabStyles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
+    // En Android overflow:hidden + elevation del padre suele clipar mal los hijos redondeados.
+    overflow: Platform.OS === 'ios' ? 'hidden' : 'visible',
   },
   tab: {
     flex: 1,
@@ -364,7 +367,10 @@ const tabStyles = StyleSheet.create({
     minWidth: 48,
     height: 40,
     paddingHorizontal: 12,
-    borderRadius: radius.full,
+    // Radio fijo (mitad de height): en Android `radius.full` + overflow del pill
+    // a veces pinta el fondo del item activo como rectángulo.
+    borderRadius: 20,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },

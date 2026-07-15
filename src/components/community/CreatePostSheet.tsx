@@ -21,7 +21,11 @@ import { AppIcon } from '../ui/AppIcon';
 import { UserAvatar } from '../ui/UserAvatar';
 import { AuthenticatedImage } from '../ui/AuthenticatedImage';
 import { ModalCloseHeader, ModalSafeScreen } from '../ui/ModalSafeScreen';
-import { communityApi, type MentionUserOption } from '../../api/community';
+import {
+  communityApi,
+  type CommunityPostVisibility,
+  type MentionUserOption,
+} from '../../api/community';
 import { prependPostToFeedCache, ensurePostReactionFields } from '../../utils/communityFeedCache';
 import { prepareImageForUpload } from '../../utils/prepareImageForUpload';
 import { ContentRefCard } from './ContentRefCard';
@@ -47,6 +51,7 @@ interface CreatePostSheetProps {
 export interface PostDraft {
   body: string;
   kind?: 'GENERAL' | 'RECOMMENDATION' | 'QUOTE';
+  visibility?: CommunityPostVisibility;
   bookId?: string;
   videoId?: string;
   podcastSeriesId?: string;
@@ -85,6 +90,7 @@ export function CreatePostSheet({ visible, onClose, initialDraft }: CreatePostSh
   const [serverImages, setServerImages] = useState<{ id: string; url: string | null }[]>([]);
   const [selectedMentions, setSelectedMentions] = useState<MentionUserOption[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [visibility, setVisibility] = useState<CommunityPostVisibility>('PUBLIC');
 
   const mentionSearch = useQuery({
     queryKey: ['mention-users', mentionQuery],
@@ -108,6 +114,7 @@ export function CreatePostSheet({ visible, onClose, initialDraft }: CreatePostSh
       setServerImages([]);
       setSelectedMentions([]);
       setMentionQuery(null);
+      setVisibility('PUBLIC');
       return;
     }
     if (initialDraft) {
@@ -120,6 +127,7 @@ export function CreatePostSheet({ visible, onClose, initialDraft }: CreatePostSh
       setQuoteExcerpt(initialDraft.quoteExcerpt);
       setAttachmentPreview(initialDraft.attachmentPreview);
       setServerImages(initialDraft.existingImages ?? []);
+      setVisibility(initialDraft.visibility ?? 'PUBLIC');
     }
   }, [visible, initialDraft]);
 
@@ -150,6 +158,7 @@ export function CreatePostSheet({ visible, onClose, initialDraft }: CreatePostSh
       return communityApi.createPost({
         body: body.trim().length >= 3 ? body.trim() : 'Compartiendo imagen',
         kind,
+        visibility,
         bookId,
         videoId,
         podcastSeriesId,
@@ -269,6 +278,76 @@ export function CreatePostSheet({ visible, onClose, initialDraft }: CreatePostSh
               { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           />
+
+          <Text style={[styles.label, { color: colors.textSecondary, marginTop: spacing.md }]}>
+            ¿Quién puede verlo?
+          </Text>
+          <View style={styles.visibilityRow}>
+            <Pressable
+              onPress={() => setVisibility('PUBLIC')}
+              style={[
+                styles.visibilityOption,
+                {
+                  borderColor: visibility === 'PUBLIC' ? colors.primary : colors.border,
+                  backgroundColor:
+                    visibility === 'PUBLIC' ? colors.accentSoft : colors.surface,
+                },
+              ]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: visibility === 'PUBLIC' }}
+            >
+              <AppIcon
+                name="eye"
+                size={18}
+                color={visibility === 'PUBLIC' ? colors.primary : colors.textSecondary}
+              />
+              <View style={styles.visibilityText}>
+                <Text
+                  style={[
+                    styles.visibilityTitle,
+                    { color: visibility === 'PUBLIC' ? colors.primary : colors.text },
+                  ]}
+                >
+                  Todos los lectores
+                </Text>
+                <Text style={[styles.visibilityHint, { color: colors.textSecondary }]}>
+                  Cualquier usuario de la app puede verlo
+                </Text>
+              </View>
+            </Pressable>
+            <Pressable
+              onPress={() => setVisibility('CONNECTIONS')}
+              style={[
+                styles.visibilityOption,
+                {
+                  borderColor: visibility === 'CONNECTIONS' ? colors.primary : colors.border,
+                  backgroundColor:
+                    visibility === 'CONNECTIONS' ? colors.accentSoft : colors.surface,
+                },
+              ]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: visibility === 'CONNECTIONS' }}
+            >
+              <AppIcon
+                name="people"
+                size={18}
+                color={visibility === 'CONNECTIONS' ? colors.primary : colors.textSecondary}
+              />
+              <View style={styles.visibilityText}>
+                <Text
+                  style={[
+                    styles.visibilityTitle,
+                    { color: visibility === 'CONNECTIONS' ? colors.primary : colors.text },
+                  ]}
+                >
+                  Solo conexiones
+                </Text>
+                <Text style={[styles.visibilityHint, { color: colors.textSecondary }]}>
+                  Quienes te siguen o a quienes sigues
+                </Text>
+              </View>
+            </Pressable>
+          </View>
 
           <View style={styles.imagesHeader}>
             <Text style={[styles.label, { color: colors.textSecondary }]}>Fotos (opcional)</Text>
@@ -401,6 +480,18 @@ const styles = StyleSheet.create({
   },
   label: { ...typography.label, marginBottom: spacing.xs },
   fieldHint: { fontSize: 12, marginBottom: spacing.sm },
+  visibilityRow: { gap: spacing.sm },
+  visibilityOption: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  visibilityText: { flex: 1 },
+  visibilityTitle: { fontSize: 14, fontWeight: '600' },
+  visibilityHint: { fontSize: 12, marginTop: 2, lineHeight: 16 },
   tagsInput: {
     borderWidth: 1,
     borderRadius: radius.lg,

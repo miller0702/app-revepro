@@ -173,6 +173,7 @@ function FeedPostCardInner({
             <Text style={[styles.meta, { color: colors.textSecondary, fontSize: scaleFont(12) }]}>
               @{post.author.username} · {formatRelativeTime(post.createdAt)}
               {post.kind === 'ANNOUNCEMENT' ? ' · Actualización' : isQuote ? ' · Cita' : ''}
+              {post.visibility === 'CONNECTIONS' ? ' · Solo conexiones' : ''}
             </Text>
           </View>
         </Pressable>

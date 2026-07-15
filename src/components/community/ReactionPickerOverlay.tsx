@@ -89,6 +89,10 @@ export function ReactionPickerOverlay({
     const initial = myReaction ?? COMMUNITY_REACTIONS[0].type;
     setHoveredType(initial);
     hoveredRef.current = initial;
+    if (Platform.OS === 'android') {
+      setHintMode('tap');
+      return;
+    }
     setHintMode('slide');
     const timer = setTimeout(() => setHintMode('tap'), 900);
     return () => clearTimeout(timer);
@@ -131,6 +135,40 @@ export function ReactionPickerOverlay({
       ? REACTION_PICKER_PAD_X + hoveredIndex * REACTION_SLOT_WIDTH + REACTION_SLOT_WIDTH / 2
       : REACTION_PICKER_WIDTH / 2;
 
+  const slots = COMMUNITY_REACTIONS.map((reaction) => (
+    <Pressable
+      key={reaction.type}
+      style={styles.slot}
+      onPress={() => commit(reaction.type)}
+      onPressIn={() => {
+        hoveredRef.current = reaction.type;
+        setHoveredType(reaction.type);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={reaction.label}
+    >
+      <ReactionSlot
+        emoji={reaction.emoji}
+        isHovered={hoveredType === reaction.type}
+        visible={visible}
+      />
+    </Pressable>
+  ));
+
+  // En Android el Pan de RNGH suele comerse los Pressable hijos; iOS sí permite deslizar.
+  const pill =
+    Platform.OS === 'android' ? (
+      <View style={styles.pill} accessibilityRole="adjustable" accessibilityLabel="Elegir reacción">
+        {slots}
+      </View>
+    ) : (
+      <GestureDetector gesture={pan}>
+        <View style={styles.pill} accessibilityRole="adjustable" accessibilityLabel="Elegir reacción">
+          {slots}
+        </View>
+      </GestureDetector>
+    );
+
   const picker = (
     <View style={[styles.pickerWrap, { left: position.left, top: position.top }]}>
       {hoveredMeta ? (
@@ -138,30 +176,7 @@ export function ReactionPickerOverlay({
           <Text style={styles.labelText}>{hoveredMeta.label}</Text>
         </View>
       ) : null}
-
-      <GestureDetector gesture={pan}>
-        <View style={styles.pill} accessibilityRole="adjustable" accessibilityLabel="Elegir reacción">
-          {COMMUNITY_REACTIONS.map((reaction) => (
-            <Pressable
-              key={reaction.type}
-              style={styles.slot}
-              onPress={() => commit(reaction.type)}
-              onPressIn={() => {
-                hoveredRef.current = reaction.type;
-                setHoveredType(reaction.type);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={reaction.label}
-            >
-              <ReactionSlot
-                emoji={reaction.emoji}
-                isHovered={hoveredType === reaction.type}
-                visible={visible}
-              />
-            </Pressable>
-          ))}
-        </View>
-      </GestureDetector>
+      {pill}
     </View>
   );
 
@@ -193,7 +208,13 @@ export function ReactionPickerOverlay({
   if (embedded) return overlay;
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onDismissBackdrop}>
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onDismissBackdrop}
+    >
       {overlay}
     </Modal>
   );

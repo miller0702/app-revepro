@@ -10,7 +10,7 @@ interface ReaderControlsProps {
   onToggleHighlightMode: () => void;
   selectionText: string | null;
   onSaveHighlight: () => void;
-  onPublishQuote: () => void;
+  onPublishQuote?: () => void;
   onClearSelection: () => void;
 }
 
@@ -40,9 +40,11 @@ export function ReaderControls({
             <Pressable onPress={onSaveHighlight} style={[styles.actionChip, { backgroundColor: colors.accentSoft }]}>
               <Text style={[styles.actionChipText, { color: colors.accent }]}>Subrayar</Text>
             </Pressable>
-            <Pressable onPress={onPublishQuote} style={[styles.actionChip, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.actionChipText, { color: colors.onPrimary }]}>Publicar</Text>
-            </Pressable>
+            {onPublishQuote ? (
+              <Pressable onPress={onPublishQuote} style={[styles.actionChip, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.actionChipText, { color: colors.onPrimary }]}>Publicar</Text>
+              </Pressable>
+            ) : null}
             <Pressable onPress={onClearSelection} hitSlop={8}>
               <AppIcon name="close" size={20} color={colors.textSecondary} />
             </Pressable>

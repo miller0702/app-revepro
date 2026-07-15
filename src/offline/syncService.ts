@@ -1,9 +1,18 @@
 import { syncApi } from '../api/sync';
+import { studyApi } from '../api/study';
 import { getDatabase } from '../db/database';
 import { mergeRemoteReadingProgress } from '../db/readingProgress';
+import {
+  getUnsyncedHighlights,
+  markHighlightSynced,
+} from '../db/highlights';
 import { getLastSync, setLastSync } from '../storage/localStorage';
+import { processDownloadQueue } from './downloadWorker';
 
 export async function syncWithServer() {
+  // Completa descargas pendientes si hay red.
+  await processDownloadQueue().catch(() => undefined);
+
   const since = await getLastSync();
   const remote = await syncApi.getState(since);
   const { bookmarks, progress } = remote.data.data;
@@ -55,6 +64,23 @@ export async function syncWithServer() {
 
     await db.runAsync('UPDATE bookmarks SET synced = 1 WHERE synced = 0');
     await db.runAsync('UPDATE reading_progress SET synced = 1 WHERE synced = 0');
+  }
+
+  // Subrayados: outbox local → API de study.
+  const pendingHighlights = await getUnsyncedHighlights();
+  for (const h of pendingHighlights) {
+    try {
+      const res = await studyApi.createHighlight({
+        bookId: h.book_id,
+        chapterId: h.chapter_id ?? undefined,
+        excerpt: h.excerpt,
+        note: h.note ?? undefined,
+        color: h.color,
+      });
+      await markHighlightSynced(h.id, res.data.data.id);
+    } catch {
+      // Se reintentará en la próxima sync.
+    }
   }
 
   await setLastSync(remote.data.data.serverTime ?? new Date().toISOString());

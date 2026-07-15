@@ -8,7 +8,6 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import { Pressable as GHPressable } from 'react-native-gesture-handler';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -154,18 +153,28 @@ export function PostActions({
   }, []);
 
   const openPicker = useCallback(() => {
-    suppressPressUntil.current = Date.now() + 800;
+    // No bloquear el tap del picker: el cooldown corto evita el onPress residual
+    // del long-press, no la selección dentro del modal.
+    suppressPressUntil.current = Date.now() + 320;
     const measure = () => {
-      anchorRef.current?.measureInWindow((x, y, width) => {
+      anchorRef.current?.measureInWindow((x, y, width, height) => {
         const screen = Dimensions.get('window');
         let left = x + width / 2 - REACTION_PICKER_WIDTH / 2;
         left = Math.max(8, Math.min(left, screen.width - REACTION_PICKER_WIDTH - 8));
-        const top = Math.max(8, y - REACTION_PICKER_HEIGHT - 12);
+        // Anclar sobre el botón; si no hay espacio, debajo.
+        const preferredTop = y - REACTION_PICKER_HEIGHT - 12;
+        const top =
+          preferredTop >= 8
+            ? preferredTop
+            : Math.min(y + height + 8, screen.height - REACTION_PICKER_HEIGHT - 8);
         setPickerPos({ left, top });
         setPickerOpen(true);
       });
     };
-    requestAnimationFrame(measure);
+    // Android a veces reporta 0x0 en el mismo frame del long-press.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(measure);
+    });
   }, []);
 
   const handleQuickPress = () => {
@@ -273,10 +282,10 @@ export function PostActions({
       ]}
     >
       <View ref={anchorRef} collapsable={false} style={styles.reactionGroup}>
-        <GHPressable
+        <Pressable
           onPress={handleQuickPress}
           onLongPress={openPicker}
-          delayLongPress={400}
+          delayLongPress={Platform.OS === 'android' ? 280 : 400}
           style={styles.iconBtn}
           hitSlop={8}
           accessibilityRole="button"
@@ -295,7 +304,7 @@ export function PostActions({
           >
             {activeMeta?.emoji ?? '🙏'}
           </Text>
-        </GHPressable>
+        </Pressable>
         {total > 0 && (
           <Pressable
             onPress={() => setReactionsOpen(true)}
