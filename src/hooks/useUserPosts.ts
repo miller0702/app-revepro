@@ -31,7 +31,7 @@ function hasCachedPosts(data: FeedInfiniteData | undefined): boolean {
 export function useUserPosts(authorId: string | undefined) {
   const queryClient = useQueryClient();
   const [cacheReady, setCacheReady] = useState(false);
-  const queryKey = communityFeedQueryKey(undefined, authorId);
+  const queryKey = useMemo(() => communityFeedQueryKey(undefined, authorId), [authorId]);
 
   useEffect(() => {
     if (!authorId) {

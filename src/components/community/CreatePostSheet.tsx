@@ -20,6 +20,7 @@ import { Button } from '../ui/Button';
 import { AppIcon } from '../ui/AppIcon';
 import { UserAvatar } from '../ui/UserAvatar';
 import { AuthenticatedImage } from '../ui/AuthenticatedImage';
+import { ModalCloseHeader, ModalSafeScreen } from '../ui/ModalSafeScreen';
 import { communityApi, type MentionUserOption } from '../../api/community';
 import { prependPostToFeedCache, ensurePostReactionFields } from '../../utils/communityFeedCache';
 import { prepareImageForUpload } from '../../utils/prepareImageForUpload';
@@ -236,17 +237,12 @@ export function CreatePostSheet({ visible, onClose, initialDraft }: CreatePostSh
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <ModalSafeScreen backgroundColor={colors.background}>
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.toolbar, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <AppIcon name="close" size={24} color={colors.text} />
-          </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>{sheetTitle}</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <ModalCloseHeader title={sheetTitle} onClose={onClose} />
 
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           <Text style={[styles.hint, { color: colors.textSecondary }]}>
@@ -386,21 +382,13 @@ export function CreatePostSheet({ visible, onClose, initialDraft }: CreatePostSh
           />
         </ScrollView>
       </KeyboardAvoidingView>
+      </ModalSafeScreen>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  title: { ...typography.title, fontSize: 17 },
   form: { padding: spacing.md },
   hint: { fontSize: 14, lineHeight: 20, marginBottom: spacing.md },
   input: {

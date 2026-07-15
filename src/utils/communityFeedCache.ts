@@ -148,6 +148,9 @@ export function updatePostInFeedCache(
     { queryKey: COMMUNITY_POSTS_QUERY_KEY },
     (old) => mapPostInInfiniteFeed(old, postId, updater),
   );
+  queryClient.setQueryData<CommunityPost>(['community-post', postId], (old) =>
+    old ? updater(old) : old,
+  );
 }
 
 export function prependPostToFeedCache(queryClient: QueryClient, post: CommunityPost) {

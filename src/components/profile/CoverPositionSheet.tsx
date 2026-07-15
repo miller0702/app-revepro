@@ -11,8 +11,8 @@ import {
 import { Image } from 'expo-image';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useModalTopInset } from '../../hooks/useSafeAreaLayout';
 import { Button } from '../ui/Button';
 import { AuthenticatedImage } from '../ui/AuthenticatedImage';
 import {
@@ -43,7 +43,7 @@ export function CoverPositionSheet({
   onSave,
 }: CoverPositionSheetProps) {
   const { colors, scaleFont } = useTheme();
-  const insets = useSafeAreaInsets();
+  const topInset = useModalTopInset();
   const { width: screenWidth } = useWindowDimensions();
   const [focus, setFocus] = useState<CoverFocus>(initialFocus);
   const [saving, setSaving] = useState(false);
@@ -99,7 +99,7 @@ export function CoverPositionSheet({
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+        <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topInset }]}>
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <Pressable onPress={onClose} disabled={saving} hitSlop={12}>
               <Text style={{ color: colors.textSecondary, fontSize: scaleFont(16) }}>Cancelar</Text>

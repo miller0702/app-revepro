@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useModalTopInset } from '../../hooks/useSafeAreaLayout';
 import { AppIcon } from '../ui/AppIcon';
 import { radius, spacing, typography } from '../../theme/tokens';
 
@@ -41,6 +42,7 @@ export function ReaderChaptersPanel({
 }: ReaderChaptersPanelProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const topInset = useModalTopInset();
   const slide = useRef(new Animated.Value(PANEL_WIDTH)).current;
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export function ReaderChaptersPanel({
             {
               backgroundColor: colors.background,
               borderLeftColor: colors.border,
-              paddingTop: insets.top + spacing.sm,
+              paddingTop: topInset + spacing.sm,
               paddingBottom: insets.bottom + spacing.sm,
               transform: [{ translateX: slide }],
             },

@@ -31,6 +31,7 @@ import { communityFeedQueryKey } from '../../../src/utils/communityFeedCache';
 import { FEED_STALE_MS } from '../../../src/config/socialFeed';
 import { useOpenUserProfile } from '../../../src/hooks/useOpenUserProfile';
 import { useScreenTopInset, useTabContentBottomPadding } from '../../../src/hooks/useSafeAreaLayout';
+import { useTabBarScrollHandler } from '../../../src/hooks/useTabBarScrollHandler';
 import { SCREEN_PADDING_X } from '../../../src/theme/layout';
 import { typography, spacing, radius } from '../../../src/theme/tokens';
 import { pickProfileImage } from '../../../src/utils/pickProfileImage';
@@ -80,6 +81,7 @@ export default function ProfileScreen() {
   const { colors } = useTheme();
   const topInset = useScreenTopInset();
   const bottomPadding = useTabContentBottomPadding();
+  const onTabBarScroll = useTabBarScrollHandler();
   const [uploading, setUploading] = useState(false);
   const [commentsPost, setCommentsPost] = useState<CommunityPost | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -258,6 +260,8 @@ export default function ProfileScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: bottomPadding }}
+        onScroll={onTabBarScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
         <Pressable

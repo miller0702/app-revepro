@@ -19,6 +19,7 @@ import {
   recordRecentPodcast,
 } from '../../../src/storage/recentContent';
 import { useScreenTopInset, useTabContentBottomPadding } from '../../../src/hooks/useSafeAreaLayout';
+import { useTabBarScrollHandler } from '../../../src/hooks/useTabBarScrollHandler';
 import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { HeaderSearchButton } from '../../../src/components/navigation/HeaderSearchButton';
 import { ContentSearchOverlay } from '../../../src/components/community/ContentSearchOverlay';
@@ -33,6 +34,7 @@ export default function AudioScreen() {
   const { colors } = useTheme();
   const topInset = useScreenTopInset();
   const scrollBottomPadding = useTabContentBottomPadding();
+  const onTabBarScroll = useTabBarScrollHandler();
   const [searchOpen, setSearchOpen] = useState(false);
   const [loadingSeriesId, setLoadingSeriesId] = useState<string | null>(null);
   const [audiobookCategoryId, setAudiobookCategoryId] = useState<string | null>(null);
@@ -174,6 +176,8 @@ export default function AudioScreen() {
             <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={colors.primary} />
           }
           contentContainerStyle={[styles.scroll, { paddingBottom: scrollBottomPadding }]}
+          onScroll={onTabBarScroll}
+          scrollEventThrottle={16}
         >
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Radio en vivo</Text>
           {radioQuery.isLoading ? (

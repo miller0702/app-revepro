@@ -1,28 +1,58 @@
-import { View, ColorValue, Pressable, StyleSheet, Platform } from 'react-native';
+import { useEffect } from 'react';
+import {
+  View,
+  ColorValue,
+  Pressable,
+  StyleSheet,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  interpolate,
+  Easing,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuthStore } from '../../stores/authStore';
+import { useTabBarScrollStore } from '../../stores/tabBarScrollStore';
 import { AppIcon, type AppIconName } from '../ui/AppIcon';
 import { UserAvatar } from '../ui/UserAvatar';
 import { AudioMiniPlayer } from '../AudioMiniPlayer';
 import type { AppSection } from '../../api/platform';
-import type { ThemeColors } from '../../theme/colors';
 import { compareAppTabOrder } from '../../config/appTabs';
+import { radius } from '../../theme/tokens';
 
-/** Altura de la fila de iconos (sin mini player ni safe area). */
-export const TAB_BAR_HEIGHT = 56;
+/** Altura fila de iconos (expandido / reposo). */
+export const TAB_BAR_HEIGHT = 60;
+/** Altura al hacer scroll down (= tamaño “grande” anterior). */
+export const TAB_BAR_HEIGHT_COLLAPSED = 56;
+export const TAB_ICON_SIZE = 28;
+export const TAB_ICON_SIZE_COLLAPSED = 26;
+export const PROFILE_TAB_AVATAR_SIZE = 28;
+export const PROFILE_TAB_AVATAR_SIZE_COLLAPSED = 26;
 
-export const TAB_ICON_SIZE = 26;
-export const PROFILE_TAB_AVATAR_SIZE = 26;
+/** Margen inferior entre el pill y el borde seguro (más abajo = menor gap). */
+export const FLOATING_TAB_BOTTOM_GAP = 4;
+/** Insets horizontales: expandido más ancho; compacto como el pill anterior. */
+export const FLOATING_TAB_HORIZONTAL_RATIO = 0.06;
+export const FLOATING_TAB_HORIZONTAL_RATIO_COLLAPSED = 0.14;
+export const FLOATING_TAB_HORIZONTAL_MIN = 12;
+export const FLOATING_TAB_HORIZONTAL_MAX = 28;
+export const FLOATING_TAB_HORIZONTAL_MIN_COLLAPSED = 28;
+export const FLOATING_TAB_HORIZONTAL_MAX_COLLAPSED = 56;
 
-/** @deprecated Usar TAB_BAR_HEIGHT */
+/** @deprecated */
 export const FLOATING_TAB_BAR_HEIGHT = TAB_BAR_HEIGHT;
-export const FLOATING_TAB_MARGIN = 0;
-export const FLOATING_TAB_BAR_HORIZONTAL_INSET = 0;
+export const FLOATING_TAB_MARGIN = FLOATING_TAB_BOTTOM_GAP;
+export const FLOATING_TAB_BAR_HORIZONTAL_INSET = FLOATING_TAB_HORIZONTAL_MIN;
 export const TAB_BAR_FADE_HEIGHT = 0;
 export const HEADER_FADE_EXTRA = 28;
+
+const ANIM = { duration: 220, easing: Easing.out(Easing.cubic) };
 
 const DEFAULT_ICONS: Record<string, { outline: AppIconName; filled: AppIconName }> = {
   feed: { outline: 'feed', filled: 'feed-filled' },
@@ -38,11 +68,13 @@ export function TabIcon({
   routeName,
   focused,
   color,
+  size = TAB_ICON_SIZE,
 }: {
   section?: AppSection;
   routeName: string;
   focused: boolean;
   color: ColorValue;
+  size?: number;
 }) {
   const fallback = DEFAULT_ICONS[routeName];
   const outline = (section?.icon ?? fallback?.outline ?? 'library') as AppIconName;
@@ -51,14 +83,22 @@ export function TabIcon({
   return (
     <AppIcon
       name={focused ? filled : outline}
-      size={TAB_ICON_SIZE}
+      size={size}
       color={color}
-      style={{ opacity: focused ? 1 : 0.55 }}
+      style={{ opacity: focused ? 1 : 0.72 }}
     />
   );
 }
 
-export function TabProfileIcon({ focused, color }: { focused: boolean; color: ColorValue }) {
+export function TabProfileIcon({
+  focused,
+  color,
+  size = PROFILE_TAB_AVATAR_SIZE,
+}: {
+  focused: boolean;
+  color: ColorValue;
+  size?: number;
+}) {
   const { colors } = useTheme();
   const user = useAuthStore((s) => s.user);
 
@@ -74,7 +114,7 @@ export function TabProfileIcon({ focused, color }: { focused: boolean; color: Co
           firstName={user.firstName}
           lastName={user.lastName}
           avatarUrl={user.avatarUrl}
-          size={PROFILE_TAB_AVATAR_SIZE}
+          size={size}
         />
       </View>
     );
@@ -83,9 +123,9 @@ export function TabProfileIcon({ focused, color }: { focused: boolean; color: Co
   return (
     <AppIcon
       name={focused ? 'profile-filled' : 'profile'}
-      size={TAB_ICON_SIZE}
+      size={size}
       color={color}
-      style={{ opacity: focused ? 1 : 0.55 }}
+      style={{ opacity: focused ? 1 : 0.72 }}
     />
   );
 }
@@ -94,29 +134,49 @@ interface AppTabBarProps extends BottomTabBarProps {
   readonly getSection: (code: string) => AppSection | undefined;
 }
 
-/** Borde superior con acento dorado + línea divisoria. */
-function TabBarTopChrome({ colors, isDark }: { colors: ThemeColors; isDark: boolean }) {
-  const accentSoft = isDark ? 'rgba(232, 197, 71, 0.28)' : 'rgba(201, 162, 39, 0.32)';
-  const accentPeak = isDark ? 'rgba(232, 197, 71, 0.72)' : 'rgba(201, 162, 39, 0.62)';
-
-  return (
-    <View style={topChromeStyles.wrap} pointerEvents="none">
-      <LinearGradient
-        colors={['transparent', accentSoft, accentPeak, accentSoft, 'transparent']}
-        locations={[0, 0.32, 0.5, 0.68, 1]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={topChromeStyles.glow}
-      />
-      <View style={[topChromeStyles.line, { backgroundColor: colors.border }]} />
-    </View>
-  );
+export function getFloatingTabHorizontalInset(screenWidth: number, collapsed = false) {
+  const ratio = collapsed
+    ? FLOATING_TAB_HORIZONTAL_RATIO_COLLAPSED
+    : FLOATING_TAB_HORIZONTAL_RATIO;
+  const min = collapsed
+    ? FLOATING_TAB_HORIZONTAL_MIN_COLLAPSED
+    : FLOATING_TAB_HORIZONTAL_MIN;
+  const max = collapsed
+    ? FLOATING_TAB_HORIZONTAL_MAX_COLLAPSED
+    : FLOATING_TAB_HORIZONTAL_MAX;
+  const raw = screenWidth * ratio;
+  return Math.round(Math.max(min, Math.min(max, raw)));
 }
 
-/** Tab bar fijo (estilo Facebook) + mini player encima (estilo Spotify). */
-export function AppTabBar({ state, descriptors, navigation, getSection }: AppTabBarProps) {
-  const { colors, isDark } = useTheme();
+/** Espacio vertical reservado bajo el contenido (pill + gaps + safe area). */
+export function getFloatingTabBarReserve(bottomInset: number, collapsed = false) {
+  const row = collapsed ? TAB_BAR_HEIGHT_COLLAPSED : TAB_BAR_HEIGHT;
+  return row + FLOATING_TAB_BOTTOM_GAP + Math.max(bottomInset, 8) + 8;
+}
+
+/**
+ * Tab bar flotante estilo Instagram:
+ * píldora translúcida centrada; se compacta al scrollear hacia abajo.
+ */
+export function AppTabBar({ state, navigation, getSection }: AppTabBarProps) {
+  const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const collapseTarget = useTabBarScrollStore((s) => s.collapse);
+  const expand = useTabBarScrollStore((s) => s.expand);
+  const collapse = useSharedValue(0);
+
+  useEffect(() => {
+    collapse.value = withTiming(collapseTarget, ANIM);
+  }, [collapse, collapseTarget]);
+
+  useEffect(() => {
+    expand();
+  }, [state.index, expand]);
+
+  const hInsetExpanded = getFloatingTabHorizontalInset(width, false);
+  const hInsetCollapsed = getFloatingTabHorizontalInset(width, true);
+  const bottomPad = Math.max(insets.bottom, 6) + FLOATING_TAB_BOTTOM_GAP;
 
   const visibleRoutes = state.routes
     .filter((route) => {
@@ -130,71 +190,124 @@ export function AppTabBar({ state, descriptors, navigation, getSection }: AppTab
       return compareAppTabOrder(a.name, b.name);
     });
 
+  const pillBg = isDark ? 'rgba(22, 26, 34, 0.82)' : 'rgba(18, 20, 26, 0.78)';
+  const pillBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.18)';
+  const activePill = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.22)';
+  const iconIdle = 'rgba(255,255,255,0.78)';
+  const iconActive = '#FFFFFF';
+
+  const dockStyle = useAnimatedStyle(() => ({
+    paddingHorizontal: interpolate(
+      collapse.value,
+      [0, 1],
+      [hInsetExpanded, hInsetCollapsed],
+    ),
+  }));
+
+  const shellStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(collapse.value, [0, 1], [0, 2]),
+      },
+    ],
+  }));
+
+  const pillStyle = useAnimatedStyle(() => ({
+    height: interpolate(collapse.value, [0, 1], [TAB_BAR_HEIGHT, TAB_BAR_HEIGHT_COLLAPSED]),
+    paddingHorizontal: interpolate(collapse.value, [0, 1], [8, 6]),
+  }));
+
+  const iconSize =
+    collapseTarget >= 0.5 ? TAB_ICON_SIZE_COLLAPSED : TAB_ICON_SIZE;
+  const avatarSize =
+    collapseTarget >= 0.5 ? PROFILE_TAB_AVATAR_SIZE_COLLAPSED : PROFILE_TAB_AVATAR_SIZE;
+
   return (
-    <View
-      style={[
-        tabStyles.shell,
-        {
-          backgroundColor: colors.surface,
-          paddingBottom: insets.bottom,
-          ...Platform.select({
-            ios: {
-              shadowColor: colors.shadow,
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: isDark ? 0.55 : 0.9,
-              shadowRadius: 12,
-            },
-            android: { elevation: 14 },
-          }),
-        },
-      ]}
-    >
-      <TabBarTopChrome colors={colors} isDark={isDark} />
-      <AudioMiniPlayer />
-      <View style={[tabStyles.row, { height: TAB_BAR_HEIGHT }]}>
-        {visibleRoutes.map((route) => {
-          const routeIndex = state.routes.findIndex((r) => r.key === route.key);
-          const focused = state.index === routeIndex;
-          const section = getSection(route.name);
-          const color = focused ? colors.primary : colors.textSecondary;
+    <View style={tabStyles.host} pointerEvents="box-none">
+      <Animated.View
+        style={[tabStyles.dock, { paddingBottom: bottomPad }, dockStyle]}
+        pointerEvents="box-none"
+      >
+        <AudioMiniPlayer floating />
+        <Animated.View
+          style={[
+            tabStyles.shadowWrap,
+            shellStyle,
+            Platform.select({
+              ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.35,
+                shadowRadius: 18,
+              },
+              android: { elevation: 18 },
+            }),
+          ]}
+        >
+          <Animated.View
+            style={[
+              tabStyles.pill,
+              pillStyle,
+              {
+                backgroundColor: pillBg,
+                borderColor: pillBorder,
+              },
+            ]}
+          >
+            {visibleRoutes.map((route) => {
+              const routeIndex = state.routes.findIndex((r) => r.key === route.key);
+              const focused = state.index === routeIndex;
+              const section = getSection(route.name);
+              const color = focused ? iconActive : iconIdle;
 
-          const icon =
-            route.name === 'profile' ? (
-              <TabProfileIcon focused={focused} color={color} />
-            ) : (
-              <TabIcon section={section} routeName={route.name} focused={focused} color={color} />
-            );
+              const icon =
+                route.name === 'profile' ? (
+                  <TabProfileIcon focused={focused} color={color} size={avatarSize} />
+                ) : (
+                  <TabIcon
+                    section={section}
+                    routeName={route.name}
+                    focused={focused}
+                    color={color}
+                    size={iconSize}
+                  />
+                );
 
-          return (
-            <Pressable
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityState={focused ? { selected: true } : {}}
-              onPress={() => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
-                if (!focused && !event.defaultPrevented) {
-                  navigation.navigate(route.name);
-                }
-              }}
-              onLongPress={() => {
-                navigation.emit({ type: 'tabLongPress', target: route.key });
-              }}
-              style={tabStyles.tab}
-            >
-              <View style={tabStyles.tabInner}>
-                {icon}
-                {focused ? (
-                  <View style={[tabStyles.activeIndicator, { backgroundColor: colors.primary }]} />
-                ) : null}
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
+              return (
+                <Pressable
+                  key={route.key}
+                  accessibilityRole="button"
+                  accessibilityState={focused ? { selected: true } : {}}
+                  onPress={() => {
+                    expand();
+                    const event = navigation.emit({
+                      type: 'tabPress',
+                      target: route.key,
+                      canPreventDefault: true,
+                    });
+                    if (!focused && !event.defaultPrevented) {
+                      navigation.navigate(route.name);
+                    }
+                  }}
+                  onLongPress={() => {
+                    navigation.emit({ type: 'tabLongPress', target: route.key });
+                  }}
+                  style={tabStyles.tab}
+                >
+                  <View
+                    style={[
+                      tabStyles.tabInner,
+                      focused && { backgroundColor: activePill },
+                    ]}
+                  >
+                    {icon}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </Animated.View>
+        </Animated.View>
+      </Animated.View>
     </View>
   );
 }
@@ -207,6 +320,12 @@ export function appTabBarScreenOptions(colors: ReturnType<typeof useTheme>['colo
     tabBarShowLabel: false,
     tabBarActiveTintColor: colors.primary,
     tabBarInactiveTintColor: colors.textSecondary,
+    tabBarStyle: {
+      position: 'absolute' as const,
+      backgroundColor: 'transparent',
+      borderTopWidth: 0,
+      elevation: 0,
+    },
   };
 }
 
@@ -214,12 +333,26 @@ export function appTabBarScreenOptions(colors: ReturnType<typeof useTheme>['colo
 export const floatingTabBarScreenOptions = appTabBarScreenOptions;
 
 const tabStyles = StyleSheet.create({
-  shell: {
-    overflow: 'visible',
+  host: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  row: {
+  dock: {
+    width: '100%',
+    alignItems: 'stretch',
+    gap: 8,
+  },
+  shadowWrap: {
+    borderRadius: radius.full,
+  },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
   },
   tab: {
     flex: 1,
@@ -228,36 +361,17 @@ const tabStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabInner: {
-    width: 40,
+    minWidth: 48,
     height: 40,
+    paddingHorizontal: 12,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    width: 22,
-    height: 3,
-    borderRadius: 2,
   },
   profileAvatarWrap: {
     borderRadius: 999,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
-  },
-});
-
-const topChromeStyles = StyleSheet.create({
-  wrap: {
-    width: '100%',
-  },
-  glow: {
-    height: 2,
-    width: '100%',
-  },
-  line: {
-    height: StyleSheet.hairlineWidth,
-    width: '100%',
   },
 });

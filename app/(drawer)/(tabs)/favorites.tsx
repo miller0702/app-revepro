@@ -19,6 +19,7 @@ import { ContentSearchOverlay } from '../../../src/components/community/ContentS
 import { useAppSection } from '../../../src/hooks/useAppSections';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useScreenTopInset, useTabContentBottomPadding } from '../../../src/hooks/useSafeAreaLayout';
+import { useTabBarScrollHandler } from '../../../src/hooks/useTabBarScrollHandler';
 import { SCREEN_PADDING_X } from '../../../src/theme/layout';
 import { typography, spacing, radius } from '../../../src/theme/tokens';
 import { FavoritesSkeleton } from '../../../src/components/skeletons/ContentSkeletons';
@@ -54,6 +55,7 @@ export default function FavoritesScreen() {
   const { colors } = useTheme();
   const topInset = useScreenTopInset();
   const listBottomPadding = useTabContentBottomPadding();
+  const onTabBarScroll = useTabBarScrollHandler();
   const section = useAppSection('favorites');
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<FavoritesTab>('all');
@@ -287,6 +289,8 @@ export default function FavoritesScreen() {
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: listBottomPadding }]}
+        onScroll={onTabBarScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
         }

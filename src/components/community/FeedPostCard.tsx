@@ -331,12 +331,10 @@ function FeedPostCardInner({
 
 function areFeedPostPropsEqual(prev: FeedPostCardProps, next: FeedPostCardProps): boolean {
   if (prev.variant !== next.variant || prev.interactive !== next.interactive) return false;
-  if (prev.onOpenComments !== next.onOpenComments) return false;
-  if (prev.onLightboxOpen !== next.onLightboxOpen) return false;
-  if (prev.onLightboxClose !== next.onLightboxClose) return false;
   if (prev.post.id !== next.post.id) return false;
   if (prev.post.commentCount !== next.post.commentCount) return false;
   if (prev.post.myReaction !== next.post.myReaction) return false;
+  if (prev.post.likedByMe !== next.post.likedByMe) return false;
   if (prev.post.repostCount !== next.post.repostCount) return false;
   if (prev.post.body !== next.post.body) return false;
   const prevCounts = prev.post.reactionCounts;

@@ -28,29 +28,41 @@ export function useCommunityFeed(tag?: string) {
   const queryClient = useQueryClient();
   const [cacheReady, setCacheReady] = useState(false);
   const isTaggedFeed = Boolean(tag);
-  const queryKey = communityFeedQueryKey(tag);
+  // Estabilizar la key: un array nuevo en cada render re-dispara el efecto de caché
+  // y provoca "Maximum update depth exceeded".
+  const queryKey = useMemo(() => communityFeedQueryKey(tag), [tag]);
 
   useEffect(() => {
+    let mounted = true;
+
     if (isTaggedFeed) {
       setCacheReady(true);
-      return;
+      return () => {
+        mounted = false;
+      };
     }
-    let mounted = true;
+
+    setCacheReady(false);
     loadFeedCache().then((cached) => {
       if (!mounted) return;
       if (cached?.length) {
-        queryClient.setQueryData(queryKey, {
-          pages: [
-            {
-              posts: cached,
-              meta: buildFeedSeedMeta(cached.length, FEED_PAGE_SIZE),
-            },
-          ],
-          pageParams: [1],
-        });
+        const existing = queryClient.getQueryData(queryKey);
+        // No pisar datos frescos de red / mutaciones con caché de disco.
+        if (!existing) {
+          queryClient.setQueryData(queryKey, {
+            pages: [
+              {
+                posts: cached,
+                meta: buildFeedSeedMeta(cached.length, FEED_PAGE_SIZE),
+              },
+            ],
+            pageParams: [1],
+          });
+        }
       }
       setCacheReady(true);
     });
+
     return () => {
       mounted = false;
     };

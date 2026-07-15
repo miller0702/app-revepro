@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useModalTopInset } from '../../hooks/useSafeAreaLayout';
 import { useOpenUserProfile } from '../../hooks/useOpenUserProfile';
 import { AppIcon } from '../ui/AppIcon';
 import { SearchResultsSkeleton } from '../skeletons/ContentSkeletons';
@@ -85,6 +86,7 @@ interface ContentSearchOverlayProps {
 export function ContentSearchOverlay({ visible, onClose, scope = 'all' }: ContentSearchOverlayProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const topInset = useModalTopInset();
   const router = useRouter();
   const openUserProfile = useOpenUserProfile();
   const slide = useRef(new Animated.Value(SCREEN_WIDTH)).current;
@@ -227,7 +229,7 @@ export function ContentSearchOverlay({ visible, onClose, scope = 'all' }: Conten
         {
           backgroundColor: colors.background,
           transform: [{ translateX: slide }],
-          paddingTop: insets.top,
+          paddingTop: topInset,
         },
       ]}
     >

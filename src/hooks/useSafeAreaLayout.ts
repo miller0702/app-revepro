@@ -1,27 +1,50 @@
+import { Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from '../theme/tokens';
-import { TAB_BAR_HEIGHT } from '../components/navigation/FloatingTabBar';
+import {
+  FLOATING_TAB_BOTTOM_GAP,
+  getFloatingTabBarReserve,
+} from '../components/navigation/FloatingTabBar';
+
+/**
+ * Top inset fiable en Android (pantallas y Modal).
+ * Dentro de Modal, useSafeAreaInsets().top a menudo es 0: usamos StatusBar como fallback.
+ */
+export function useResolvedTopInset() {
+  const insets = useSafeAreaInsets();
+  const androidFallback = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
+  return Math.max(insets.top, androidFallback);
+}
 
 /** Padding superior estándar para pantallas sin header nativo. */
 export function useScreenTopInset(extra = spacing.md) {
-  const insets = useSafeAreaInsets();
-  return insets.top + extra;
+  return useResolvedTopInset() + extra;
 }
 
-/** Altura reservada del tab bar fijo (iconos + safe area). */
+/**
+ * Inset superior para headers/toolbars dentro de Modal (X, cancelar, etc.).
+ */
+export function useModalTopInset(extra = 0) {
+  return useResolvedTopInset() + extra;
+}
+
+/** Altura reservada del tab bar flotante (pill + gaps + safe area). */
 export function useTabBarOffset() {
   const insets = useSafeAreaInsets();
-  return TAB_BAR_HEIGHT + insets.bottom;
+  return getFloatingTabBarReserve(insets.bottom, false);
 }
 
-/** @deprecated Tab bar fijo; el layout reserva espacio automáticamente. */
+/** @deprecated */
 export function useFloatingTabBarOffset() {
   return useTabBarOffset();
 }
 
-/** Padding extra al final de listas dentro de tabs. */
+/**
+ * Padding inferior de listas dentro de tabs (contenido no queda bajo el pill flotante).
+ */
 export function useTabContentBottomPadding(extra = spacing.md) {
-  return extra;
+  const insets = useSafeAreaInsets();
+  return getFloatingTabBarReserve(insets.bottom, false) + extra;
 }
 
 /** @deprecated Usar useTabContentBottomPadding */
@@ -33,8 +56,8 @@ export function useFloatingTabBarPadding(extra = spacing.md) {
 export function useTabBarInsets() {
   const insets = useSafeAreaInsets();
   return {
-    height: TAB_BAR_HEIGHT + insets.bottom,
-    paddingBottom: insets.bottom,
+    height: getFloatingTabBarReserve(insets.bottom, false),
+    paddingBottom: insets.bottom + FLOATING_TAB_BOTTOM_GAP,
     paddingTop: 0,
   };
 }

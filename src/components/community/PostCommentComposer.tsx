@@ -5,12 +5,12 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import { useKeyboardHeight } from '../../hooks/useKeyboardHeight';
 import { AppIcon } from '../ui/AppIcon';
 import { communityApi, type CommunityComment, type CommunityPost } from '../../api/community';
 import { bumpCommentCount, restoreFeedQueries, snapshotFeedQueries, updatePostInFeedCache } from '../../utils/communityFeedCache';
@@ -31,6 +31,7 @@ export function PostCommentComposer({
 }: PostCommentComposerProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
 
@@ -64,58 +65,60 @@ export function PostCommentComposer({
     addMutation.mutate({ body: text, parentId: replyTo?.id });
   };
 
+  const keyboardOpen = keyboardHeight > 0;
+  // Android usa softwareKeyboardLayoutMode=resize; iOS necesita elevar el compositor.
+  const lift = Platform.OS === 'ios' && keyboardOpen ? keyboardHeight : 0;
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+    <View
+      style={[
+        styles.composer,
+        {
+          borderTopColor: colors.border,
+          backgroundColor: colors.surface,
+          paddingBottom: keyboardOpen ? spacing.sm : Math.max(insets.bottom, spacing.sm),
+          marginBottom: lift,
+        },
+      ]}
     >
-      <View
-        style={[
-          styles.composer,
-          {
-            borderTopColor: colors.border,
-            backgroundColor: colors.surface,
-            paddingBottom: Math.max(insets.bottom, spacing.sm),
-          },
-        ]}
-      >
-        {replyTo && (
-          <View style={styles.replyingBar}>
-            <Text style={[styles.replyingText, { color: colors.textSecondary }]}>
-              Respondiendo a @{replyTo.author.username}
-            </Text>
-            <Pressable onPress={onClearReply} hitSlop={8}>
-              <AppIcon name="close" size={16} color={colors.textSecondary} />
-            </Pressable>
-          </View>
-        )}
-        <View style={styles.composerRow}>
-          <TextInput
-            value={comment}
-            onChangeText={setComment}
-            placeholder={replyTo ? 'Escribe una respuesta...' : 'Escribe un comentario...'}
-            placeholderTextColor={colors.textSecondary}
-            style={[styles.input, { color: colors.text, backgroundColor: colors.background }]}
-            autoFocus={autoFocus}
-            returnKeyType="send"
-            onSubmitEditing={submit}
-          />
-          <Pressable
-            onPress={submit}
-            disabled={!comment.trim() || addMutation.isPending}
-            style={styles.sendBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Enviar comentario"
-          >
-            <AppIcon
-              name="send"
-              size={22}
-              color={comment.trim() ? colors.primary : colors.textSecondary}
-            />
+      {replyTo && (
+        <View style={styles.replyingBar}>
+          <Text style={[styles.replyingText, { color: colors.textSecondary }]}>
+            Respondiendo a @{replyTo.author.username}
+          </Text>
+          <Pressable onPress={onClearReply} hitSlop={8}>
+            <AppIcon name="close" size={16} color={colors.textSecondary} />
           </Pressable>
         </View>
+      )}
+      <View style={styles.composerRow}>
+        <TextInput
+          value={comment}
+          onChangeText={setComment}
+          placeholder={replyTo ? 'Escribe una respuesta...' : 'Escribe un comentario...'}
+          placeholderTextColor={colors.textSecondary}
+          style={[styles.input, { color: colors.text, backgroundColor: colors.background }]}
+          autoFocus={autoFocus}
+          multiline
+          maxLength={2000}
+          textAlignVertical="center"
+          blurOnSubmit={false}
+        />
+        <Pressable
+          onPress={submit}
+          disabled={!comment.trim() || addMutation.isPending}
+          style={styles.sendBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar comentario"
+        >
+          <AppIcon
+            name="send"
+            size={22}
+            color={comment.trim() ? colors.primary : colors.textSecondary}
+          />
+        </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -133,14 +136,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   replyingText: { fontSize: 12, fontWeight: '500' },
-  composerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
   input: {
     flex: 1,
     borderRadius: 20,
     paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     fontSize: 15,
-    maxHeight: 100,
+    maxHeight: 110,
+    minHeight: 40,
   },
-  sendBtn: { padding: 8 },
+  sendBtn: { padding: 8, marginBottom: 2 },
 });

@@ -30,6 +30,7 @@ import type { PostDraft } from './CreatePostSheet';
 import type { CommunityPost } from '../../api/community';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import { useTheme } from '../../hooks/useTheme';
+import { useModalTopInset } from '../../hooks/useSafeAreaLayout';
 import { radius, spacing } from '../../theme/tokens';
 
 export interface PostImageItem {
@@ -80,6 +81,7 @@ export function PostImageLightbox({
   onShareAsPost,
 }: PostImageLightboxProps) {
   const insets = useSafeAreaInsets();
+  const topInset = useModalTopInset();
   const { width, height: windowHeight } = useWindowDimensions();
   const { scaleFont, colors } = useTheme();
   const items = images.filter((img) => img.url);
@@ -227,7 +229,7 @@ export function PostImageLightbox({
 
             {items.length > 1 ? (
               <Animated.View
-                style={[styles.progressTrack, { top: insets.top }, animatedChromeStyle]}
+                style={[styles.progressTrack, { top: topInset }, animatedChromeStyle]}
                 pointerEvents="none"
               >
                 <View style={styles.progressBg} />
@@ -241,7 +243,7 @@ export function PostImageLightbox({
             ) : null}
 
             <Animated.View
-              style={[styles.topGradient, { height: insets.top + 108 }, animatedChromeStyle]}
+              style={[styles.topGradient, { height: topInset + 108 }, animatedChromeStyle]}
               pointerEvents="none"
             >
               <LinearGradient
@@ -254,7 +256,7 @@ export function PostImageLightbox({
             <Animated.View
               style={[
                 styles.topControls,
-                { paddingTop: insets.top + (items.length > 1 ? 10 : 0) },
+                { paddingTop: topInset + (items.length > 1 ? 10 : 0) },
                 animatedChromeStyle,
               ]}
               pointerEvents={chromeVisible ? 'box-none' : 'none'}

@@ -7,27 +7,27 @@ import {
   FlatList,
   Pressable,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../hooks/useTheme';
+import { useKeyboardHeight } from '../../hooks/useKeyboardHeight';
 import { UserAvatar } from '../ui/UserAvatar';
 import { AppIcon } from '../ui/AppIcon';
 import { EmbeddedBottomSheet } from '../ui/EmbeddedBottomSheet';
+import { ModalCloseHeader, ModalSafeScreen } from '../ui/ModalSafeScreen';
 import { communityApi, type CommunityComment, type CommunityPost } from '../../api/community';
 import { useOpenUserProfile } from '../../hooks/useOpenUserProfile';
 import { bumpCommentCount, restoreFeedQueries, snapshotFeedQueries, updatePostInFeedCache } from '../../utils/communityFeedCache';
 import { CommentListSkeleton } from '../skeletons/ContentSkeletons';
-import { spacing, typography } from '../../theme/tokens';
+import { spacing } from '../../theme/tokens';
 
 interface PostCommentsSheetProps {
   post: CommunityPost | null;
   onClose: () => void;
-  /** Usar overlay dentro de otro modal (p. ej. visor de imágenes). */
   embedded?: boolean;
-  /** Con `embedded`, controla visibilidad sin desmontar el post. */
   visible?: boolean;
 }
 
@@ -40,7 +40,10 @@ function buildThread(comments: CommunityComment[]) {
     byParent.set(key, list);
   }
 
-  const renderBranch = (parentId: string | null, depth = 0): Array<{ comment: CommunityComment; depth: number }> => {
+  const renderBranch = (
+    parentId: string | null,
+    depth = 0,
+  ): Array<{ comment: CommunityComment; depth: number }> => {
     const items = byParent.get(parentId) ?? [];
     const out: Array<{ comment: CommunityComment; depth: number }> = [];
     for (const item of items) {
@@ -93,6 +96,7 @@ function CommentRow({
 export function PostCommentsSheet({ post, onClose, embedded = false, visible }: PostCommentsSheetProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
   const [replyTo, setReplyTo] = useState<CommunityComment | null>(null);
@@ -111,6 +115,7 @@ export function PostCommentsSheet({ post, onClose, embedded = false, visible }: 
     if (!isOpen) {
       setComment('');
       setReplyTo(null);
+      Keyboard.dismiss();
     }
   }, [isOpen]);
 
@@ -142,7 +147,12 @@ export function PostCommentsSheet({ post, onClose, embedded = false, visible }: 
     addMutation.mutate({ body: text, parentId: replyTo?.id });
   };
 
-  const composerBottom = Math.max(insets.bottom, spacing.lg);
+  const keyboardOpen = keyboardHeight > 0;
+  /** En Modal de Android adjustResize no aplica: levantamos el compositor con la altura del teclado. */
+  const composerLift = keyboardOpen ? keyboardHeight : 0;
+  const composerBottomPad = keyboardOpen
+    ? spacing.sm
+    : Math.max(insets.bottom, embedded ? spacing.sm : spacing.lg);
 
   const composer = (
     <View
@@ -151,7 +161,8 @@ export function PostCommentsSheet({ post, onClose, embedded = false, visible }: 
         {
           borderTopColor: colors.border,
           backgroundColor: colors.surface,
-          paddingBottom: embedded ? spacing.sm : composerBottom,
+          paddingBottom: composerBottomPad,
+          marginBottom: composerLift,
         },
       ]}
     >
@@ -172,11 +183,18 @@ export function PostCommentsSheet({ post, onClose, embedded = false, visible }: 
           placeholder={replyTo ? 'Escribe una respuesta...' : 'Escribe un comentario...'}
           placeholderTextColor={colors.textSecondary}
           style={[styles.input, { color: colors.text, backgroundColor: colors.background }]}
+          multiline
+          maxLength={2000}
+          textAlignVertical="center"
+          blurOnSubmit={false}
+          returnKeyType="default"
         />
         <Pressable
           onPress={submit}
           disabled={!comment.trim() || addMutation.isPending}
           style={styles.sendBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar comentario"
         >
           <AppIcon
             name="send"
@@ -197,6 +215,7 @@ export function PostCommentsSheet({ post, onClose, embedded = false, visible }: 
         style={embedded ? styles.embeddedList : styles.modalList}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         ListEmptyComponent={
           !isLoading ? (
             <Text style={[styles.empty, { color: colors.textSecondary }]}>
@@ -216,38 +235,26 @@ export function PostCommentsSheet({ post, onClose, embedded = false, visible }: 
 
     return (
       <EmbeddedBottomSheet visible={!!visible} onClose={onClose} zIndex={25}>
-        <Text style={[styles.title, { color: colors.text, marginBottom: spacing.sm }]}>
+        <Text style={[styles.sheetTitle, { color: colors.text, marginBottom: spacing.sm }]}>
           Comentarios
         </Text>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.embeddedBody}
-        >
+        <View style={styles.embeddedBody}>
           {list}
           {composer}
-        </KeyboardAvoidingView>
+        </View>
       </EmbeddedBottomSheet>
     );
   }
 
   return (
     <Modal visible={!!post} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
-      >
-        <View style={[styles.toolbar, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <AppIcon name="close" size={24} color={colors.text} />
-          </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>Comentarios</Text>
-          <View style={{ width: 24 }} />
+      <ModalSafeScreen backgroundColor={colors.background}>
+        <View style={styles.container}>
+          <ModalCloseHeader title="Comentarios" onClose={onClose} />
+          {list}
+          {composer}
         </View>
-
-        {list}
-        {composer}
-      </KeyboardAvoidingView>
+      </ModalSafeScreen>
     </Modal>
   );
 }
@@ -257,16 +264,8 @@ const styles = StyleSheet.create({
   modalList: { flex: 1 },
   embeddedBody: { flexShrink: 1 },
   embeddedList: { maxHeight: 360 },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  title: { ...typography.title, fontSize: 17, textAlign: 'center' },
-  list: { paddingBottom: spacing.sm },
+  sheetTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center' },
+  list: { paddingBottom: spacing.sm, paddingHorizontal: spacing.md },
   empty: { textAlign: 'center', paddingVertical: spacing.xl },
   comment: {
     flexDirection: 'row',
@@ -280,7 +279,8 @@ const styles = StyleSheet.create({
   replyBtn: { marginTop: 6, alignSelf: 'flex-start' },
   replyText: { fontSize: 12, fontWeight: '600' },
   composer: {
-    padding: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     gap: spacing.xs,
   },
@@ -291,13 +291,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   replyingText: { fontSize: 12, fontWeight: '500' },
-  composerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
   input: {
     flex: 1,
     borderRadius: 20,
     paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     fontSize: 15,
+    maxHeight: 110,
+    minHeight: 40,
   },
-  sendBtn: { padding: 8 },
+  sendBtn: { padding: 8, marginBottom: 2 },
 });

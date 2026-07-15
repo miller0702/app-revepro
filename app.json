@@ -33,7 +33,8 @@
         "backgroundColor": "#0c0f14"
       },
       "package": "com.resvepro.app",
-      "versionCode": 2
+      "versionCode": 2,
+      "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
       "expo-router",

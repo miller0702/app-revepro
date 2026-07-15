@@ -1,16 +1,15 @@
 import { useMemo } from 'react';
 import { Modal, View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { UserAvatar } from '../ui/UserAvatar';
-import { AppIcon } from '../ui/AppIcon';
+import { ModalCloseHeader, ModalSafeScreen } from '../ui/ModalSafeScreen';
 import { communityApi, type CommunityPost } from '../../api/community';
 import { useOpenUserProfile } from '../../hooks/useOpenUserProfile';
 import { COMMUNITY_REACTIONS, getReactionMeta } from '../../constants/communityReactions';
 import { EmbeddedBottomSheet } from '../ui/EmbeddedBottomSheet';
 import { CommentListSkeleton } from '../skeletons/ContentSkeletons';
-import { radius, spacing, typography } from '../../theme/tokens';
+import { spacing, typography } from '../../theme/tokens';
 
 interface ReactionsListSheetProps {
   post: CommunityPost | null;
@@ -20,7 +19,6 @@ interface ReactionsListSheetProps {
 
 export function ReactionsListSheet({ post, onClose, embedded = false }: ReactionsListSheetProps) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const openUserProfile = useOpenUserProfile();
 
   const { data, isLoading } = useQuery({
@@ -103,17 +101,10 @@ export function ReactionsListSheet({ post, onClose, embedded = false }: Reaction
 
   return (
     <Modal visible={!!post} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-        <View style={[styles.toolbar, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <AppIcon name="close" size={24} color={colors.text} />
-          </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>Reacciones</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
+      <ModalSafeScreen backgroundColor={colors.background}>
+        <ModalCloseHeader title="Reacciones" onClose={onClose} />
         {listContent}
-      </View>
+      </ModalSafeScreen>
     </Modal>
   );
 }
@@ -121,14 +112,6 @@ export function ReactionsListSheet({ post, onClose, embedded = false }: Reaction
 const styles = StyleSheet.create({
   container: { flex: 1 },
   embeddedList: { maxHeight: 420 },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
   title: { ...typography.title, fontSize: 17 },
   loading: { textAlign: 'center', padding: spacing.md },
   list: { padding: spacing.md, paddingBottom: spacing.xl },

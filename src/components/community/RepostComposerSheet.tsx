@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -13,9 +12,9 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../hooks/useTheme';
 import { Button } from '../ui/Button';
-import { AppIcon } from '../ui/AppIcon';
 import { UserAvatar } from '../ui/UserAvatar';
 import { EmbeddedBottomSheet } from '../ui/EmbeddedBottomSheet';
+import { ModalCloseHeader, ModalSafeScreen } from '../ui/ModalSafeScreen';
 import { useAuthStore } from '../../stores/authStore';
 import { communityApi, type CommunityPost } from '../../api/community';
 import { contentRefFromPost, ContentRefCard } from './ContentRefCard';
@@ -154,34 +153,22 @@ export function RepostComposerSheet({ post, visible, onClose, embedded = false }
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <ModalSafeScreen backgroundColor={colors.background}>
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.toolbar, { borderBottomColor: colors.border }]}>
-          <Pressable onPress={onClose} hitSlop={12} disabled={repostMutation.isPending}>
-            <AppIcon name="close" size={24} color={colors.text} />
-          </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>Repostear</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <ModalCloseHeader title="Repostear" onClose={onClose} closeDisabled={repostMutation.isPending} />
 
         {form}
       </KeyboardAvoidingView>
+      </ModalSafeScreen>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
   title: { ...typography.title, fontSize: 17 },
   form: { flex: 1, padding: spacing.md },
   authorRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.md },

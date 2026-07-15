@@ -21,6 +21,7 @@ export const FLAT_LIST_PERF = {
   initialNumToRender: 6,
   maxToRenderPerBatch: 8,
   windowSize: 7,
-  removeClippedSubviews: true,
+  // En Android provoca cortes de toque (long-press) y parpadeos en celdas.
+  removeClippedSubviews: false,
   updateCellsBatchingPeriod: 50,
 } as const;

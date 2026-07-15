@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../stores/authStore';
 import { useTheme } from '../../hooks/useTheme';
+import { useResolvedTopInset } from '../../hooks/useSafeAreaLayout';
 import { UserAvatar } from '../ui/UserAvatar';
 import { AppIcon, type AppIconName } from '../ui/AppIcon';
 import { useDrawerMenu } from '../../hooks/useDrawerMenu';
@@ -14,6 +15,7 @@ export function DrawerContent(props: DrawerContentComponentProps) {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const topInset = useResolvedTopInset();
   const { colors, scaleFont, appName } = useTheme();
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
@@ -34,7 +36,7 @@ export function DrawerContent(props: DrawerContentComponentProps) {
     <View style={[styles.root, { backgroundColor: colors.surface }]}>
       <DrawerContentScrollView
         {...props}
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.md }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: topInset + spacing.md }]}
         showsVerticalScrollIndicator={false}
       >
         <Pressable

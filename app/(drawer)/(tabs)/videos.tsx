@@ -17,6 +17,7 @@ import {
 } from '../../../src/storage/recentContent';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useScreenTopInset, useTabContentBottomPadding } from '../../../src/hooks/useSafeAreaLayout';
+import { useTabBarScrollHandler } from '../../../src/hooks/useTabBarScrollHandler';
 import { SCREEN_PADDING_X } from '../../../src/theme/layout';
 import { VideoCardSkeleton, skeletonKeys } from '../../../src/components/skeletons/ContentSkeletons';
 import { spacing } from '../../../src/theme/tokens';
@@ -26,6 +27,7 @@ export default function VideosScreen() {
   const { colors } = useTheme();
   const topInset = useScreenTopInset();
   const listBottomPadding = useTabContentBottomPadding();
+  const onTabBarScroll = useTabBarScrollHandler();
   const [searchOpen, setSearchOpen] = useState(false);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const { categories, isLoading: filtersLoading } = useCategoryFilters('VIDEO');
@@ -71,6 +73,8 @@ export default function VideosScreen() {
           data={listLoading ? skeletonKeys() : videos}
           keyExtractor={(item) => (typeof item === 'string' ? item : item.id)}
           contentContainerStyle={[styles.list, { paddingBottom: listBottomPadding }]}
+          onScroll={onTabBarScroll}
+          scrollEventThrottle={16}
           ListHeaderComponent={
             <ContentFilterBar
               categories={filterCategories}

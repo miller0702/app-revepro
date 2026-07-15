@@ -18,6 +18,7 @@ import { useReadingStatuses } from '../../../src/hooks/useReadingStatuses';
 import { AppIcon, type AppIconName } from '../../../src/components/ui/AppIcon';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useScreenTopInset, useTabContentBottomPadding } from '../../../src/hooks/useSafeAreaLayout';
+import { useTabBarScrollHandler } from '../../../src/hooks/useTabBarScrollHandler';
 import { SCREEN_PADDING_X } from '../../../src/theme/layout';
 import { syncWithServer } from '../../../src/offline/syncService';
 import { getConfig } from '../../../src/config/environments';
@@ -34,6 +35,7 @@ export default function LibraryScreen() {
   const { colors } = useTheme();
   const topInset = useScreenTopInset();
   const listBottomPadding = useTabContentBottomPadding();
+  const onTabBarScroll = useTabBarScrollHandler();
   const { appTagline } = getConfig();
   const section = useAppSection('library');
   const { categories, collections, isLoading: filtersLoading, rawCategories, rawCollections } =
@@ -197,6 +199,8 @@ export default function LibraryScreen() {
           data={isLoading ? skeletonKeys() : listData}
           keyExtractor={(item) => (typeof item === 'string' ? item : item.id)}
           contentContainerStyle={[styles.list, { paddingBottom: listBottomPadding }]}
+          onScroll={onTabBarScroll}
+          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={colors.primary} />
           }

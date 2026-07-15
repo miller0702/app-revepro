@@ -8,10 +8,10 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DrawerBackButton } from '../navigation/DrawerBackButton';
 import { AppIcon, type AppIconName } from '../ui/AppIcon';
 import { SCREEN_PADDING_X } from '../../theme/layout';
+import { useResolvedTopInset } from '../../hooks/useSafeAreaLayout';
 import { radius, spacing, typography } from '../../theme/tokens';
 import { resolveApiMediaUrl } from '../../utils/mediaUrl';
 
@@ -45,7 +45,7 @@ export function ParallaxCoverLayout({
   topSpacer,
   sheetOverlap = 28,
 }: ParallaxCoverLayoutProps) {
-  const insets = useSafeAreaInsets();
+  const topInset = useResolvedTopInset();
   const scrollY = useSharedValue(0);
   const imageUri = resolveApiMediaUrl(coverUrl);
 
@@ -112,7 +112,7 @@ export function ParallaxCoverLayout({
         {heroOverlay ? <View style={styles.heroOverlay}>{heroOverlay}</View> : null}
       </View>
 
-      <Animated.View style={[styles.navBar, { paddingTop: insets.top }, navBarStyle]}>
+      <Animated.View style={[styles.navBar, { paddingTop: topInset }, navBarStyle]}>
         <DrawerBackButton color="#fff" />
       </Animated.View>
 

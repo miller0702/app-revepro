@@ -29,12 +29,14 @@ import { getConfig } from '../../../src/config/environments';
 import { FeedComposerSkeleton, FeedPostSkeleton, skeletonKeys } from '../../../src/components/skeletons/ContentSkeletons';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useScreenTopInset, useTabContentBottomPadding } from '../../../src/hooks/useSafeAreaLayout';
+import { useTabBarScrollHandler } from '../../../src/hooks/useTabBarScrollHandler';
 import { spacing } from '../../../src/theme/tokens';
 
 export default function FeedScreen() {
   const { colors } = useTheme();
   const topInset = useScreenTopInset();
   const listBottomPadding = useTabContentBottomPadding();
+  const onTabBarScroll = useTabBarScrollHandler();
   const section = useAppSection('feed');
   const { appName } = getConfig();
   const [createOpen, setCreateOpen] = useState(false);
@@ -116,6 +118,24 @@ export default function FeedScreen() {
     },
   ).current;
 
+  const handleOpenComments = useCallback((post: CommunityPost) => {
+    setCommentsPost(post);
+  }, []);
+
+  const handleLightboxOpen = useCallback(() => {
+    setCommentsPost(null);
+    setLightboxOpen(true);
+  }, []);
+
+  const handleLightboxClose = useCallback(() => {
+    setLightboxOpen(false);
+  }, []);
+
+  const handleShareAsPost = useCallback((draft: PostDraft) => {
+    setCreateDraft(draft);
+    setCreateOpen(true);
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.headerChrome}>
@@ -134,6 +154,8 @@ export default function FeedScreen() {
         keyExtractor={(item) => (typeof item === 'string' ? item : item.id)}
         contentContainerStyle={{ paddingBottom: listBottomPadding }}
         {...FLAT_LIST_PERF}
+        onScroll={onTabBarScroll}
+        scrollEventThrottle={16}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.35}
         onViewableItemsChanged={handleViewableItemsChanged}
@@ -193,16 +215,10 @@ export default function FeedScreen() {
           ) : (
             <FeedPostCard
               post={item}
-              onOpenComments={setCommentsPost}
-              onLightboxOpen={() => {
-                setCommentsPost(null);
-                setLightboxOpen(true);
-              }}
-              onLightboxClose={() => setLightboxOpen(false)}
-              onShareAsPost={(draft) => {
-                setCreateDraft(draft);
-                setCreateOpen(true);
-              }}
+              onOpenComments={handleOpenComments}
+              onLightboxOpen={handleLightboxOpen}
+              onLightboxClose={handleLightboxClose}
+              onShareAsPost={handleShareAsPost}
               variant="feed"
             />
           )

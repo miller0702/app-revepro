@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,7 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import { Pressable as GHPressable } from 'react-native-gesture-handler';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -34,26 +33,30 @@ import { ReactionsListSheet } from './ReactionsListSheet';
 import { RepostComposerSheet } from './RepostComposerSheet';
 import { ReactionPickerOverlay } from './ReactionPickerOverlay';
 import {
-  hitTestReactionPicker,
   REACTION_PICKER_HEIGHT,
   REACTION_PICKER_WIDTH,
-  type ReactionPickerLayout,
 } from '../../utils/reactionPickerHitTest';
 
 interface PostActionsProps {
   post: CommunityPost;
   onOpenComments: (post: CommunityPost) => void;
-  /** `overlay` = iconos claros sobre fondo oscuro (visor de imágenes). */
   tone?: 'default' | 'overlay';
-  /** Overlays embebidos en lugar de Modal (dentro del visor de imágenes). */
   embeddedOverlays?: boolean;
 }
 
 const DEFAULT_REACTION: CommunityReactionType = 'AMEN';
-const LONG_PRESS_MS = 320;
 const REACTION_COOLDOWN_MS = 280;
 
-export function PostActions({ post, onOpenComments, tone = 'default', embeddedOverlays = false }: PostActionsProps) {
+function resolveMyReaction(post: CommunityPost): CommunityReactionType | null {
+  return post.myReaction ?? (post.likedByMe ? 'AMEN' : null);
+}
+
+export function PostActions({
+  post,
+  onOpenComments,
+  tone = 'default',
+  embeddedOverlays = false,
+}: PostActionsProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const isOverlay = tone === 'overlay';
@@ -64,140 +67,121 @@ export function PostActions({ post, onOpenComments, tone = 'default', embeddedOv
   const anchorRef = useRef<View>(null);
   const reactionLock = useRef(false);
   const suppressPressUntil = useRef(0);
-  const longPressHandled = useRef(false);
-  const pickerOpenRef = useRef(false);
-  const hoveredTypeRef = useRef<CommunityReactionType | null>(null);
-  const pickerLayoutsRef = useRef<Map<CommunityReactionType, ReactionPickerLayout>>(new Map());
-  const dragEndingRef = useRef(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [hoveredType, setHoveredType] = useState<CommunityReactionType | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [repostOpen, setRepostOpen] = useState(false);
   const [reactionsOpen, setReactionsOpen] = useState(false);
   const [pickerPos, setPickerPos] = useState<{ left: number; top: number } | null>(null);
 
-  useEffect(() => {
-    pickerOpenRef.current = pickerOpen;
-  }, [pickerOpen]);
+  /** UI local para evitar parpadeo mientras llega la respuesta del servidor. */
+  const serverReaction = resolveMyReaction(post);
+  const [localReaction, setLocalReaction] = useState<CommunityReactionType | null>(serverReaction);
+  const [localCounts, setLocalCounts] = useState(() =>
+    normalizeReactionCounts(post.reactionCounts, post.likeCount),
+  );
 
   useEffect(() => {
-    hoveredTypeRef.current = hoveredType;
-  }, [hoveredType]);
+    if (reactionLock.current) return;
+    setLocalReaction((prev) => (prev === serverReaction ? prev : serverReaction));
+    setLocalCounts((prev) => {
+      const next = normalizeReactionCounts(post.reactionCounts, post.likeCount);
+      if (
+        prev.AMEN === next.AMEN &&
+        prev.INSPIRED === next.INSPIRED &&
+        prev.INSIGHT === next.INSIGHT &&
+        prev.PRAY === next.PRAY &&
+        prev.READ === next.READ
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [serverReaction, post.reactionCounts, post.likeCount]);
 
-  const counts = normalizeReactionCounts(post.reactionCounts, post.likeCount);
-  const total = totalReactionCount(counts);
-  const myReaction = post.myReaction ?? (post.likedByMe ? 'AMEN' : null);
+  const total = totalReactionCount(localCounts);
+  const myReaction = localReaction;
   const activeMeta = myReaction ? getReactionMeta(myReaction) : null;
 
   const reactionMutation = useMutation({
     mutationFn: (type: CommunityReactionType) => communityApi.toggleReaction(post.id, type),
     onMutate: (type) => {
       const previousPost = findPostInFeedCache(queryClient, post.id) ?? post;
-      updatePostInFeedCache(queryClient, post.id, (p) => applyReactionOptimistic(p, type));
+      const next = applyReactionOptimistic(previousPost, type);
+      setLocalReaction(resolveMyReaction(next));
+      setLocalCounts(normalizeReactionCounts(next.reactionCounts, next.likeCount));
+      updatePostInFeedCache(queryClient, post.id, () => next);
       return { previousPost };
     },
     onError: (_err, _type, context) => {
       if (context?.previousPost) {
         const snapshot = context.previousPost;
+        setLocalReaction(resolveMyReaction(snapshot));
+        setLocalCounts(normalizeReactionCounts(snapshot.reactionCounts, snapshot.likeCount));
         updatePostInFeedCache(queryClient, post.id, () => snapshot);
       }
       toast.error('No se pudo guardar la reacción');
     },
     onSuccess: (res) => {
       const { myReaction: nextReaction, reactionCounts } = res.data.data;
+      const counts = normalizeReactionCounts(reactionCounts);
+      setLocalReaction(nextReaction);
+      setLocalCounts(counts);
       updatePostInFeedCache(queryClient, post.id, (p) =>
-        applyReactionFromServer(p, nextReaction, reactionCounts),
+        applyReactionFromServer(p, nextReaction, counts),
       );
     },
   });
 
-  const submitReaction = (type: CommunityReactionType) => {
-    if (reactionLock.current || reactionMutation.isPending) return;
-    reactionLock.current = true;
-    reactionMutation.mutate(type, {
-      onSettled: () => {
-        reactionLock.current = false;
-        suppressPressUntil.current = Date.now() + REACTION_COOLDOWN_MS;
-      },
-    });
-  };
+  const submitReaction = useCallback(
+    (type: CommunityReactionType) => {
+      if (reactionLock.current || reactionMutation.isPending) return;
+      if (Date.now() < suppressPressUntil.current) return;
+      reactionLock.current = true;
+      reactionMutation.mutate(type, {
+        onSettled: () => {
+          reactionLock.current = false;
+          suppressPressUntil.current = Date.now() + REACTION_COOLDOWN_MS;
+        },
+      });
+    },
+    [reactionMutation],
+  );
 
-  const openPickerAtAnchor = useCallback(() => {
-    longPressHandled.current = true;
-    setHoveredType(null);
-    setPickerOpen(true);
-    anchorRef.current?.measureInWindow((x, y, width) => {
-      const screen = Dimensions.get('window');
-      let left = x + width / 2 - REACTION_PICKER_WIDTH / 2;
-      left = Math.max(8, Math.min(left, screen.width - REACTION_PICKER_WIDTH - 8));
-      const top = Math.max(8, y - REACTION_PICKER_HEIGHT - 40);
-      setPickerPos({ left, top });
-    });
-  }, []);
-
-  const dismissPicker = useCallback((swallowNextPress = false) => {
+  const dismissPicker = useCallback(() => {
     setPickerOpen(false);
     setPickerPos(null);
-    setHoveredType(null);
-    pickerLayoutsRef.current = new Map();
-    if (swallowNextPress) {
-      suppressPressUntil.current = Date.now() + REACTION_COOLDOWN_MS;
-    }
+    suppressPressUntil.current = Date.now() + REACTION_COOLDOWN_MS;
   }, []);
 
-  const handleLayoutsReady = useCallback((layouts: Map<CommunityReactionType, ReactionPickerLayout>) => {
-    pickerLayoutsRef.current = layouts;
+  const openPicker = useCallback(() => {
+    suppressPressUntil.current = Date.now() + 800;
+    const measure = () => {
+      anchorRef.current?.measureInWindow((x, y, width) => {
+        const screen = Dimensions.get('window');
+        let left = x + width / 2 - REACTION_PICKER_WIDTH / 2;
+        left = Math.max(8, Math.min(left, screen.width - REACTION_PICKER_WIDTH - 8));
+        const top = Math.max(8, y - REACTION_PICKER_HEIGHT - 12);
+        setPickerPos({ left, top });
+        setPickerOpen(true);
+      });
+    };
+    requestAnimationFrame(measure);
   }, []);
 
-  const updateHoverAt = useCallback((absoluteX: number, absoluteY: number) => {
-    if (!pickerOpenRef.current) return;
-    const hit = hitTestReactionPicker(absoluteX, absoluteY, pickerLayoutsRef.current);
-    setHoveredType((prev) => (prev === hit ? prev : hit));
-  }, []);
-
-  const endPickerDrag = useCallback(() => {
-    if (!pickerOpenRef.current || dragEndingRef.current) return;
-    dragEndingRef.current = true;
-    const selected = hoveredTypeRef.current;
-    dismissPicker();
-    longPressHandled.current = false;
-    if (selected) {
-      submitReaction(selected);
-    }
-    dragEndingRef.current = false;
-  }, [dismissPicker]);
-
-  const handleQuickPress = useCallback(() => {
+  const handleQuickPress = () => {
+    if (pickerOpen) return;
     if (Date.now() < suppressPressUntil.current) return;
-    if (longPressHandled.current) {
-      longPressHandled.current = false;
-      return;
-    }
-    if (pickerOpenRef.current) return;
     submitReaction(myReaction ?? DEFAULT_REACTION);
-  }, [myReaction]);
+  };
 
-  const reactionGesture = useMemo(() => {
-    const tap = Gesture.Tap()
-      .maxDuration(LONG_PRESS_MS - 20)
-      .onEnd(() => {
-        runOnJS(handleQuickPress)();
-      });
-
-    const pickPan = Gesture.Pan()
-      .activateAfterLongPress(LONG_PRESS_MS)
-      .onStart(() => {
-        runOnJS(openPickerAtAnchor)();
-      })
-      .onUpdate((event) => {
-        runOnJS(updateHoverAt)(event.absoluteX, event.absoluteY);
-      })
-      .onEnd(() => {
-        runOnJS(endPickerDrag)();
-      });
-
-    return Gesture.Exclusive(pickPan, tap);
-  }, [endPickerDrag, handleQuickPress, openPickerAtAnchor, updateHoverAt]);
+  /** Selección desde el picker: no usar dismissPicker (bloqueaba el mutate con suppress). */
+  const handleSelectFromPicker = (type: CommunityReactionType) => {
+    setPickerOpen(false);
+    setPickerPos(null);
+    suppressPressUntil.current = 0;
+    submitReaction(type);
+    suppressPressUntil.current = Date.now() + REACTION_COOLDOWN_MS;
+  };
 
   const sharePost = async () => {
     setShareOpen(false);
@@ -275,42 +259,43 @@ export function PostActions({ post, onOpenComments, tone = 'default', embeddedOv
       visible={pickerOpen}
       position={pickerPos}
       myReaction={myReaction}
-      hoveredType={hoveredType}
-      onLayoutsReady={handleLayoutsReady}
       embedded={embeddedOverlays}
-      colors={{
-        surface: colors.surface,
-        border: colors.border,
-        text: colors.text,
-        primary: colors.primary,
-      }}
-      onDismissBackdrop={() => dismissPicker(true)}
+      onSelect={handleSelectFromPicker}
+      onDismissBackdrop={dismissPicker}
     />
   );
 
   const actionsBar = (
-    <View style={[styles.actions, { borderTopColor: borderColor, marginTop: isOverlay ? spacing.xs : spacing.sm }]}>
+    <View
+      style={[
+        styles.actions,
+        { borderTopColor: borderColor, marginTop: isOverlay ? spacing.xs : spacing.sm },
+      ]}
+    >
       <View ref={anchorRef} collapsable={false} style={styles.reactionGroup}>
-        <GestureDetector gesture={reactionGesture}>
-          <View
-            style={styles.iconBtn}
-            accessibilityRole="button"
-            accessibilityLabel={
-              activeMeta
-                ? `Tu reacción: ${activeMeta.label}. Mantén pulsado y desliza para cambiar`
-                : 'Reaccionar. Mantén pulsado y desliza para elegir reacción'
-            }
+        <GHPressable
+          onPress={handleQuickPress}
+          onLongPress={openPicker}
+          delayLongPress={400}
+          style={styles.iconBtn}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={
+            activeMeta
+              ? `Tu reacción: ${activeMeta.label}. Mantén pulsado para elegir otra`
+              : 'Reaccionar. Mantén pulsado para ver más reacciones'
+          }
+        >
+          <Text
+            style={[
+              styles.myReactionEmoji,
+              !activeMeta &&
+                (isOverlay ? styles.myReactionEmojiOverlayMuted : styles.myReactionEmojiMuted),
+            ]}
           >
-            <Text
-              style={[
-                styles.myReactionEmoji,
-                !activeMeta && (isOverlay ? styles.myReactionEmojiOverlayMuted : styles.myReactionEmojiMuted),
-              ]}
-            >
-              {activeMeta?.emoji ?? '🙏'}
-            </Text>
-          </View>
-        </GestureDetector>
+            {activeMeta?.emoji ?? '🙏'}
+          </Text>
+        </GHPressable>
         {total > 0 && (
           <Pressable
             onPress={() => setReactionsOpen(true)}
@@ -358,7 +343,6 @@ export function PostActions({ post, onOpenComments, tone = 'default', embeddedOv
       ) : (
         <>
           {pickerOverlay}
-
           <Modal
             visible={shareOpen}
             transparent
@@ -427,7 +411,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
     minWidth: 44,
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: spacing.xs,
   },
   myReactionEmoji: { fontSize: 22 },
