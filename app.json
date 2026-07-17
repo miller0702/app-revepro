@@ -33,7 +33,7 @@
         "backgroundColor": "#0c0f14"
       },
       "package": "com.resvepro.app",
-      "versionCode": 2,
+      "versionCode": 4,
       "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
