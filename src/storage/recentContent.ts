@@ -7,7 +7,15 @@ const MAX_RECENT = 24;
 
 export type RecentVideo = Pick<
   VideoItem,
-  'id' | 'title' | 'description' | 'durationSec' | 'viewCount' | 'thumbnailUrl'
+  | 'id'
+  | 'title'
+  | 'description'
+  | 'durationSec'
+  | 'viewCount'
+  | 'thumbnailUrl'
+  | 'sourceType'
+  | 'youtubeVideoId'
+  | 'videoUrl'
 > & {
   categoryName?: string | null;
   viewedAt: string;
@@ -81,6 +89,9 @@ export async function recordRecentVideo(video: VideoItem): Promise<void> {
     durationSec: video.durationSec,
     viewCount: video.viewCount,
     thumbnailUrl: video.thumbnailUrl,
+    sourceType: video.sourceType,
+    youtubeVideoId: video.youtubeVideoId,
+    videoUrl: video.videoUrl,
     categoryName: video.category?.name ?? null,
   });
 }
@@ -115,6 +126,9 @@ export function recentVideoToItem(recent: RecentVideo): VideoItem {
     durationSec: recent.durationSec,
     viewCount: recent.viewCount,
     thumbnailUrl: recent.thumbnailUrl,
+    sourceType: recent.sourceType,
+    youtubeVideoId: recent.youtubeVideoId,
+    videoUrl: recent.videoUrl,
     category: recent.categoryName ? { id: '', name: recent.categoryName } : null,
   };
 }

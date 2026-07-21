@@ -23,6 +23,7 @@ interface ContentFilterBarProps {
   showReadingTab?: boolean;
   readingCount?: number;
   loading?: boolean;
+  contentInsetHorizontal?: number;
   topSpacing?: number;
 }
 
@@ -39,9 +40,15 @@ export function ContentFilterBar({
   showReadingTab = false,
   readingCount = 0,
   loading = false,
+  contentInsetHorizontal,
   topSpacing = 0,
 }: ContentFilterBarProps) {
   const { colors } = useTheme();
+
+  const containerStyle = [
+    topSpacing > 0 ? { marginTop: topSpacing } : null,
+    contentInsetHorizontal != null ? { paddingHorizontal: contentInsetHorizontal } : null,
+  ];
 
   const chips =
     showCollections && activeTab === 'collections'
@@ -59,7 +66,11 @@ export function ContentFilterBar({
       : onCategoryChange;
 
   if (loading) {
-    return <FilterChipsSkeleton />;
+    return (
+      <View style={containerStyle}>
+        <FilterChipsSkeleton />
+      </View>
+    );
   }
 
   const hasChips =
@@ -74,7 +85,7 @@ export function ContentFilterBar({
     showReadingTab || (showCollections && collections.length > 0);
 
   return (
-    <View style={[styles.wrap, topSpacing > 0 && { marginTop: topSpacing }]}>
+    <View style={[styles.wrap, containerStyle]}>
       {showSegmented ? (
         <View style={[styles.tabs, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {showReadingTab ? (
@@ -112,7 +123,7 @@ export function ContentFilterBar({
                       },
                     ]}
                   >
-                    {readingCount > 99 ? '99+' : readingCount}
+                    {readingCount > 99 ? '99+' : String(readingCount)}
                   </Text>
                 </View>
               ) : null}

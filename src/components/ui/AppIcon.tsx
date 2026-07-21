@@ -57,7 +57,8 @@ export type AppIconName =
   | 'camera'
   | 'gallery'
   | 'trash'
-  | 'crop';
+  | 'crop'
+  | 'volume-mute';
 
 type IconFamily = 'ionicons' | 'material';
 
@@ -116,6 +117,7 @@ const iconMap: Record<AppIconName, { family: IconFamily; name: string }> = {
   gallery: { family: 'ionicons', name: 'images-outline' },
   trash: { family: 'ionicons', name: 'trash-outline' },
   crop: { family: 'ionicons', name: 'crop-outline' },
+  'volume-mute': { family: 'ionicons', name: 'volume-mute' },
 };
 
 export interface AppIconProps {

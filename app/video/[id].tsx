@@ -3,7 +3,6 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { streamingApi } from '../../src/api/streaming';
 import { AppIcon } from '../../src/components/ui/AppIcon';
 import { FavoriteToggle } from '../../src/components/ui/FavoriteToggle';
@@ -53,8 +52,10 @@ export default function VideoDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Espacio bajo status bar para que el video no invada la hora del teléfono */}
-      <View style={[styles.statusSpacer, { height: topInset }]} />
+      {/* Atrás fuera del frame del video para no chocar con fullscreen nativo */}
+      <View style={[styles.topBar, { paddingTop: topInset }]}>
+        <DrawerBackButton color="#fff" />
+      </View>
       <View style={styles.playerSection}>
         <View style={styles.playerFrame}>
           {isYouTube && video.youtubeVideoId ? (
@@ -68,13 +69,6 @@ export default function VideoDetailScreen() {
             </View>
           )}
         </View>
-
-        <LinearGradient
-          colors={['rgba(0,0,0,0.55)', 'transparent']}
-          style={styles.playerTopGradient}
-        >
-          <DrawerBackButton color="#fff" />
-        </LinearGradient>
       </View>
 
       <ScrollView
@@ -118,9 +112,11 @@ export default function VideoDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  statusSpacer: {
+  topBar: {
     width: '100%',
     backgroundColor: '#000',
+    paddingBottom: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loading: { fontSize: 15 },
@@ -131,16 +127,6 @@ const styles = StyleSheet.create({
   },
   playerFrame: {
     ...StyleSheet.absoluteFillObject,
-  },
-  playerTopGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingTop: spacing.sm,
-    paddingHorizontal: spacing.xs,
-    paddingBottom: spacing.md,
-    zIndex: 2,
   },
   placeholder: {
     flex: 1,

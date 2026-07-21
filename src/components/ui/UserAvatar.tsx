@@ -1,13 +1,6 @@
-import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
-import { Image } from 'expo-image';
 import { useTheme } from '../../hooks/useTheme';
-import { resolveApiMediaUrl } from '../../utils/mediaUrl';
-import {
-  getAccessTokenCache,
-  getAuthImageHeaders,
-  warmAccessTokenCache,
-} from '../../lib/accessTokenCache';
+import { AuthenticatedImage } from './AuthenticatedImage';
 
 interface UserAvatarProps {
   firstName?: string | null;
@@ -25,28 +18,11 @@ export function UserAvatar({
   style,
 }: UserAvatarProps) {
   const { colors, scaleFont } = useTheme();
-  const [tokenReady, setTokenReady] = useState(Boolean(getAccessTokenCache()));
-
-  useEffect(() => {
-    if (getAccessTokenCache()) {
-      setTokenReady(true);
-      return;
-    }
-    let mounted = true;
-    warmAccessTokenCache().then(() => {
-      if (mounted) setTokenReady(true);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const initial =
     firstName?.charAt(0)?.toUpperCase() ??
     lastName?.charAt(0)?.toUpperCase() ??
     '?';
-  const uri = resolveApiMediaUrl(avatarUrl);
-  const authHeaders = getAuthImageHeaders();
   const radius = size / 2;
 
   return (
@@ -70,15 +46,11 @@ export function UserAvatar({
       >
         {initial}
       </Text>
-      {uri && tokenReady && authHeaders ? (
-        <Image
-          source={{ uri, headers: authHeaders }}
+      {avatarUrl ? (
+        <AuthenticatedImage
+          url={avatarUrl}
           style={[StyleSheet.absoluteFillObject, { borderRadius: radius }]}
           contentFit="cover"
-          cachePolicy="memory-disk"
-          recyclingKey={uri}
-          transition={120}
-          priority="high"
         />
       ) : null}
     </View>
@@ -87,9 +59,11 @@ export function UserAvatar({
 
 const styles = StyleSheet.create({
   base: {
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
-  initial: { fontWeight: '700' },
+  initial: {
+    fontWeight: '700',
+  },
 });

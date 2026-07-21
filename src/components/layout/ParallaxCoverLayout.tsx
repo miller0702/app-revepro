@@ -10,10 +10,10 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { DrawerBackButton } from '../navigation/DrawerBackButton';
 import { AppIcon, type AppIconName } from '../ui/AppIcon';
+import { AuthenticatedImage } from '../ui/AuthenticatedImage';
 import { SCREEN_PADDING_X } from '../../theme/layout';
 import { useResolvedTopInset } from '../../hooks/useSafeAreaLayout';
 import { radius, spacing, typography } from '../../theme/tokens';
-import { resolveApiMediaUrl } from '../../utils/mediaUrl';
 
 export const PARALLAX_HERO_HEIGHT = 320;
 
@@ -47,7 +47,6 @@ export function ParallaxCoverLayout({
 }: ParallaxCoverLayoutProps) {
   const topInset = useResolvedTopInset();
   const scrollY = useSharedValue(0);
-  const imageUri = resolveApiMediaUrl(coverUrl);
 
   const spacerHeight =
     topSpacer ??
@@ -89,12 +88,14 @@ export function ParallaxCoverLayout({
   return (
     <View style={styles.root}>
       <View style={[styles.hero, { height: PARALLAX_HERO_HEIGHT, backgroundColor: fallbackColor }]}>
-        {imageUri ? (
-          <Animated.Image
-            source={{ uri: imageUri }}
-            style={[styles.heroImage, heroImageStyle]}
-            resizeMode="cover"
-          />
+        {coverUrl ? (
+          <Animated.View style={[styles.heroImage, heroImageStyle]}>
+            <AuthenticatedImage
+              url={coverUrl}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode="cover"
+            />
+          </Animated.View>
         ) : fallbackLetter ? (
           <Animated.View style={[styles.heroFallback, heroImageStyle, { backgroundColor: fallbackColor }]}>
             <Text style={styles.heroLetter}>{fallbackLetter}</Text>

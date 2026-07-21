@@ -1,9 +1,11 @@
 import { Pressable, Text, StyleSheet, View, Image } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { AppIcon } from './ui/AppIcon';
+import { AuthenticatedImage } from './ui/AuthenticatedImage';
+import { DirectVideoPlayer } from './VideoPlayer';
+import { resolveVideoThumbnailUrl } from '../utils/videoThumbnail';
 import { radius, typography, spacing } from '../theme/tokens';
 import { formatDuration, formatViewCount } from '../utils/format';
-import { resolveApiMediaUrl } from '../utils/mediaUrl';
 
 interface VideoCardProps {
   title: string;
@@ -12,6 +14,9 @@ interface VideoCardProps {
   viewCount?: number;
   categoryName?: string;
   thumbnailUrl?: string | null;
+  youtubeVideoId?: string | null;
+  sourceType?: 'DIRECT' | 'YOUTUBE' | null;
+  videoUrl?: string | null;
   index?: number;
   onPress: () => void;
 }
@@ -25,12 +30,15 @@ export function VideoCard({
   viewCount,
   categoryName,
   thumbnailUrl,
+  youtubeVideoId,
+  sourceType,
+  videoUrl,
   index = 0,
   onPress,
 }: VideoCardProps) {
   const { colors } = useTheme();
   const thumbColor = thumbColors[index % thumbColors.length];
-  const thumbUri = resolveApiMediaUrl(thumbnailUrl);
+  const thumbUri = resolveVideoThumbnailUrl({ thumbnailUrl, youtubeVideoId, sourceType });
 
   return (
     <Pressable
@@ -46,7 +54,13 @@ export function VideoCard({
     >
       <View style={[styles.thumbnail, { backgroundColor: thumbColor }]}>
         {thumbUri ? (
-          <Image source={{ uri: thumbUri }} style={styles.thumbnailImage} resizeMode="cover" />
+          thumbUri.includes('img.youtube.com') ? (
+            <Image source={{ uri: thumbUri }} style={styles.thumbnailImage} resizeMode="cover" />
+          ) : (
+            <AuthenticatedImage url={thumbUri} style={styles.thumbnailImage} resizeMode="cover" />
+          )
+        ) : videoUrl ? (
+          <DirectVideoPlayer url={videoUrl} preview contentFit="cover" autoPlay={false} />
         ) : null}
         <View style={styles.playBadge}>
           <AppIcon name="play" size={22} color={colors.onPrimary} />

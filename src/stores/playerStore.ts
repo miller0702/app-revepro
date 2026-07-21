@@ -5,6 +5,8 @@ import {
   type AudioPlayer,
 } from 'expo-audio';
 import type { EventSubscription } from 'expo-modules-core';
+import * as SecureStore from 'expo-secure-store';
+import { isApiHostedMediaUrl, resolveApiMediaUrl } from '../utils/mediaUrl';
 
 export type PlayerKind = 'podcast' | 'radio' | 'audiobook';
 
@@ -40,6 +42,14 @@ function releasePlayer(player: AudioPlayer | null, subscription: EventSubscripti
   }
 }
 
+async function resolvePlayableSource(url: string) {
+  const resolved = resolveApiMediaUrl(url) ?? url;
+  if (!isApiHostedMediaUrl(resolved)) return resolved;
+  const token = await SecureStore.getItemAsync('accessToken');
+  if (!token) return resolved;
+  return { uri: resolved, headers: { Authorization: `Bearer ${token}` } };
+}
+
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   track: null,
   isPlaying: false,
@@ -64,7 +74,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       interruptionMode: 'duckOthers',
     });
 
-    const player = createAudioPlayer(track.url, { updateInterval: 500 });
+    const source = await resolvePlayableSource(track.url);
+    const player = createAudioPlayer(source, { updateInterval: 500 });
 
     const subscription = player.addListener('playbackStatusUpdate', (status) => {
       set({

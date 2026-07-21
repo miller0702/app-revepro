@@ -27,13 +27,18 @@ export function BookCardSkeleton() {
 }
 
 export function VideoCardSkeleton() {
+  return <VideoFeedSkeleton />;
+}
+
+/** Skeleton estilo feed (sin card con borde). */
+export function VideoFeedSkeleton() {
   const { colors } = useTheme();
   return (
-    <View style={[styles.videoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View style={[styles.videoFeedRow, { borderBottomColor: colors.border }]}>
       <View style={styles.videoThumb}>
         <Skeleton fill borderRadius={0} />
       </View>
-      <View style={styles.videoContent}>
+      <View style={styles.videoFeedContent}>
         <Skeleton height={18} style={styles.mbSm} />
         <Skeleton width="45%" height={13} style={styles.mbSm} />
         <Skeleton height={14} />
@@ -259,8 +264,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     overflow: 'hidden',
   },
+  videoFeedRow: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingBottom: spacing.md,
+    marginBottom: 0,
+  },
   videoThumb: { aspectRatio: 16 / 9, width: '100%' },
   videoContent: { padding: spacing.md },
+  videoFeedContent: {
+    paddingHorizontal: SCREEN_PADDING_X,
+    paddingTop: spacing.sm,
+  },
   podcastCard: {
     flexDirection: 'row',
     borderRadius: radius.lg,

@@ -1,7 +1,7 @@
 import type { MobileConfig } from './types';
 
 /** IP de tu Mac en la red local. Debe coincidir con la de Metro (exp://…). */
-const DEV_LAN_IP = '192.168.1.5';
+const DEV_LAN_IP = '192.168.1.3';
 
 export const developmentConfig: MobileConfig = {
   env: 'development',

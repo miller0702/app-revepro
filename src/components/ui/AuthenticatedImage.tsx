@@ -5,7 +5,7 @@ import {
   getAuthImageHeaders,
   warmAccessTokenCache,
 } from '../../lib/accessTokenCache';
-import { resolveApiMediaUrl } from '../../utils/mediaUrl';
+import { isApiHostedMediaUrl, resolveApiMediaUrl } from '../../utils/mediaUrl';
 
 interface AuthenticatedImageProps extends Omit<ImageProps, 'source'> {
   url: string | null | undefined;
@@ -27,10 +27,17 @@ export function AuthenticatedImage({
   contentFit,
   ...props
 }: AuthenticatedImageProps) {
-  const [tokenReady, setTokenReady] = useState(Boolean(getAccessTokenCache()));
   const uri = resolveApiMediaUrl(url);
+  const needsAuth = isApiHostedMediaUrl(uri);
+  const [tokenReady, setTokenReady] = useState(
+    !needsAuth || Boolean(getAccessTokenCache()),
+  );
 
   useEffect(() => {
+    if (!needsAuth) {
+      setTokenReady(true);
+      return;
+    }
     if (getAccessTokenCache()) {
       setTokenReady(true);
       return;
@@ -42,17 +49,19 @@ export function AuthenticatedImage({
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [needsAuth, uri]);
 
-  const authHeaders = getAuthImageHeaders();
-  if (!uri || !tokenReady || !authHeaders) return null;
+  if (!uri || !tokenReady) return null;
+
+  const authHeaders = needsAuth ? getAuthImageHeaders() : undefined;
+  if (needsAuth && !authHeaders) return null;
 
   const fit = contentFit ?? (resizeMode ? RESIZE_TO_FIT[resizeMode] : 'cover');
 
   return (
     <Image
       {...props}
-      source={{ uri, headers: authHeaders }}
+      source={authHeaders ? { uri, headers: authHeaders } : { uri }}
       style={style}
       contentFit={fit}
       cachePolicy="memory-disk"

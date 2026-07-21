@@ -1,8 +1,8 @@
-import { Pressable, Text, StyleSheet, View, Image, ActivityIndicator } from 'react-native';
+import { Pressable, Text, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { AppIcon } from './ui/AppIcon';
+import { AuthenticatedImage } from './ui/AuthenticatedImage';
 import { radius, typography, spacing } from '../theme/tokens';
-import { resolveApiMediaUrl } from '../utils/mediaUrl';
 import { formatDuration } from '../utils/format';
 
 interface PodcastCardProps {
@@ -36,7 +36,6 @@ export function PodcastCard({
 }: PodcastCardProps) {
   const { colors } = useTheme();
   const coverColor = coverColors[index % coverColors.length];
-  const imageUri = resolveApiMediaUrl(coverUrl);
 
   return (
     <Pressable
@@ -51,8 +50,8 @@ export function PodcastCard({
       ]}
     >
       <View style={[styles.cover, { backgroundColor: coverColor }]}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.coverImage} resizeMode="cover" />
+        {coverUrl ? (
+          <AuthenticatedImage url={coverUrl} style={styles.coverImage} resizeMode="cover" />
         ) : (
           <AppIcon name="music" size={34} color="rgba(255,255,255,0.9)" />
         )}
