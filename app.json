@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#0c0f14",
     "splash": {
-      "image": "./assets/logo-full.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0c0f14"
     },
@@ -33,7 +33,7 @@
         "backgroundColor": "#0c0f14"
       },
       "package": "com.resvepro.app",
-      "versionCode": 4,
+      "versionCode": 6,
       "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
@@ -60,8 +60,8 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/logo-full.png",
-          "imageWidth": 300,
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#0c0f14"
         }

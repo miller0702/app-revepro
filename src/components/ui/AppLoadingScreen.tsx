@@ -2,7 +2,7 @@ import { View, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { SPLASH_BACKGROUND, SPLASH_PRIMARY } from '../../theme/splash';
 import { spacing } from '../../theme/tokens';
 
-const logoSource = require('../../../assets/logo-full.png');
+const logoSource = require('../../../assets/splash-icon.png');
 
 interface AppLoadingScreenProps {
   showSpinner?: boolean;
@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
     backgroundColor: SPLASH_BACKGROUND,
   },
   logo: {
-    width: 300,
+    width: 220,
     height: 220,
   },
   spinner: {
